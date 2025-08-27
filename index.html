@@ -1,96 +1,20 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cosmic Shawarma</title>
-
+  <meta charset="UTF-8">
+  <title>Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <style>
-    body {
-      margin:0;
-      background: #0b0f1a;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    .wrap {
-      max-width: 400px;
-      margin: auto;
-    }
-    h1 {
-      color: orange;
-      margin-bottom: 20px;
-    }
-    .btn {
-      display: block;
-      width: 100%;
-      margin: 12px 0;
-      padding: 15px;
-      font-size: 18px;
-      border: none;
-      border-radius: 14px;
-      background: #111;
-      color: white;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .btn:hover {
-      background: #222;
-    }
-    .btn.selected {
-      background: orange;
-      color: black;
-      transform: scale(1.05);
-    }
-    .confirm {
-      margin-top: 20px;
-      background: orange;
-      color: black;
-      font-weight: bold;
-    }
-  </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>🌯 Cosmic Shawarma</h1>
-    <p>Выбери ингредиенты:</p>
-
-    <button class="btn" data-choice="🥩 Метеоритное мясо">🥩 Метеоритное мясо</button>
-    <button class="btn" data-choice="🥗 Овощи с Марса">🥗 Овощи с Марса</button>
-    <button class="btn" data-choice="🌌 Соус из чёрной дыры">🌌 Соус из чёрной дыры</button>
-    <button class="btn" data-choice="✨ Лаваш из звёздной пыли">✨ Лаваш из звёздной пыли</button>
-
-    <button class="btn confirm" id="orderBtn">🚀 Заказать шаурму</button>
-  </div>
+  <h2>Привет! 👋 Это мини-приложение</h2>
+  <button id="sendData">Отправить данные боту</button>
 
   <script>
-    const tg = Telegram.WebApp;
-    tg.expand();
+    let tg = window.Telegram.WebApp;
+    tg.expand(); // разворачиваем на весь экран
 
-    let selected = [];
-
-    document.querySelectorAll(".btn[data-choice]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const choice = btn.getAttribute("data-choice");
-        if (selected.includes(choice)) {
-          selected = selected.filter(c => c !== choice);
-          btn.classList.remove("selected");
-        } else {
-          selected.push(choice);
-          btn.classList.add("selected");
-        }
-      });
-    });
-
-    document.getElementById("orderBtn").addEventListener("click", () => {
-      if (selected.length === 0) {
-        alert("Выбери хотя бы один ингредиент!");
-        return;
-      }
-      tg.sendData(JSON.stringify(selected));
+    document.getElementById("sendData").addEventListener("click", () => {
+      tg.sendData(JSON.stringify({name: "Иван", age: 25})); 
     });
   </script>
 </body>
