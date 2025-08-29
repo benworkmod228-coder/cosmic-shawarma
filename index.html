@@ -1,11 +1,47 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ЖКХ-бот</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЖКХ Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Добро пожаловать в ЖКХ мини-приложение!</h1>
-  <p>Если ты это видишь — значит GitHub Pages работает 🚀</p>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6">🏠 ЖКХ Mini App</h1>
+        <div class="grid grid-cols-1 gap-4">
+            <button id="refresh-btn" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">🔄 Обновить данные</button>
+            <button id="tariff-btn" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">📊 Посмотреть тариф</button>
+            <button id="balance-btn" class="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600">💳 Проверить баланс</button>
+            <button id="topup-btn" class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">💵 Пополнить баланс</button>
+            <button id="services-btn" class="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600">🛠 Услуги</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Function to send action to the bot
+        function sendAction(action) {
+            tg.sendData(JSON.stringify({ action: action }));
+        }
+
+        // Add event listeners to buttons
+        document.getElementById('refresh-btn').addEventListener('click', () => sendAction('refresh'));
+        document.getElementById('tariff-btn').addEventListener('click', () => sendAction('tariff'));
+        document.getElementById('balance-btn').addEventListener('click', () => sendAction('balance'));
+        document.getElementById('topup-btn').addEventListener('click', () => sendAction('topup'));
+        document.getElementById('services-btn').addEventListener('click', () => sendAction('services'));
+
+        // Handle back button to close the WebApp
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
+            tg.close();
+        });
+    </script>
 </body>
 </html>
