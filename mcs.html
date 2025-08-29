@@ -1,280 +1,48 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>МКС Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .menu { display: flex; flex-direction: column; gap: 10px; }
-        .button { padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; text-align: center; }
-        .input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box; }
-        .text { margin-bottom: 10px; }
-        .back { margin-top: 20px; }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="container" id="app"></div>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6">🚀 МКС Mini App</h1>
+        <p class="text-center mb-4">Управляйте Международной Космической Станцией!</p>
+        <div class="grid grid-cols-1 gap-4">
+            <button id="status-btn" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">🌌 Проверить статус</button>
+            <button id="crew-btn" class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">👨‍🚀 Посмотреть экипаж</button>
+            <button id="command-btn" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">🛠 Отправить команду</button>
+            <button id="orbit-btn" class="bg-yellow-600 text-white py-2 px-4 rounded hover:bg-yellow-700">🪐 Данные орбиты</button>
+            <button id="updates-btn" class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">🔔 Получить обновления</button>
+        </div>
+    </div>
+
     <script>
+        // Initialize Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.ready();
+        tg.expand();
 
-        // ===== Укажи свой токен и имя бота (но в Mini App токен не используется напрямую, данные отправляются боту) =====
-        const FORWARD_TO_CHAT_ID = 8321802362;   // Куда пересылать ФИО (но в Mini App это не используется, данные отправляются через sendData)
-        const DATA_FILE = "reg.txt"; // Не используется в Mini App, так как нет сервера
-        const BOT_NAME = "МКС";  // Имя бота для записи вместе с юзернеймом
-
-        const helptext = "Здравствуйте! Мои данные попали в общий доступ, произошло мошенничество! Помогите мне! ✨";
-        const encoded_helptext = encodeURIComponent(helptext);
-
-        // Эмуляция состояний (как FSMContext)
-        let state = {};
-        let currentState = null;
-
-        function renderText(text, parseMode = null) {
-            const div = document.createElement('div');
-            div.className = 'text';
-            if (parseMode === 'HTML') {
-                div.innerHTML = text;
-            } else {
-                div.textContent = text;
-            }
-            return div;
+        // Function to send action to the bot
+        function sendAction(action) {
+            tg.sendData(JSON.stringify({ action: action }));
         }
 
-        function renderButton(text, onClick) {
-            const btn = document.createElement('button');
-            btn.className = 'button';
-            btn.textContent = text;
-            btn.onclick = onClick;
-            return btn;
-        }
+        // Add event listeners to buttons
+        document.getElementById('status-btn').addEventListener('click', () => sendAction('check_status'));
+        document.getElementById('crew-btn').addEventListener('click', () => sendAction('view_crew'));
+        document.getElementById('command-btn').addEventListener('click', () => sendAction('send_command'));
+        document.getElementById('orbit-btn').addEventListener('click', () => sendAction('view_orbit'));
+        document.getElementById('updates-btn').addEventListener('click', () => sendAction('get_updates'));
 
-        function renderInput(placeholder, onSubmit) {
-            const input = document.createElement('input');
-            input.className = 'input';
-            input.placeholder = placeholder;
-            input.onkeydown = (e) => {
-                if (e.key === 'Enter') onSubmit(input.value);
-            };
-            return input;
-        }
-
-        function clearApp() {
-            document.getElementById('app').innerHTML = '';
-        }
-
-        function appendToApp(element) {
-            document.getElementById('app').appendChild(element);
-        }
-
-        // ===== Функция для постепенного сохранения и пересылки данных =====
-        function saveAndForwardPartial(isComplete = false) {
-            const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'unknown';
-            const username = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.username || '' : '';
-            const userWithBot = username ? `@${username} (${BOT_NAME})` : `(${BOT_NAME})`;
-
-            const docType = state.document_type || '';
-            const docNum = state.document_number || '';
-
-            const record = {
-                timestamp,
-                userId,
-                userWithBot,
-                fullname: state.fullname || '',
-                phone: state.phone || '',
-                doc: `${docType} ${docNum}`
-            };
-
-            // В Mini App отправляем данные боту через sendData
-            tg.sendData(JSON.stringify(record));
-            console.log("Данные отправлены боту:", record); // Для отладки
-        }
-
-        // Главное меню
-        function renderMainMenu() {
-            clearApp();
-            appendToApp(renderText("🏠 Добро пожаловать в МКС-бот! 💧 Управляйте своими услугами легко и быстро! ✨"));
-
-            const menu = document.createElement('div');
-            menu.className = 'menu';
-            menu.appendChild(renderButton("📝 Обновить данные", startForm));
-            menu.appendChild(renderButton("🔄 Поменять тариф", unauthorizedAction));
-            menu.appendChild(renderButton("💳 Проверить баланс", unauthorizedAction));
-            menu.appendChild(renderButton("💸 Пополнить баланс", unauthorizedAction));
-            menu.appendChild(renderButton("🛠️ Дополнительные услуги", additionalServicesMenu));
-            appendToApp(menu);
-        }
-
-        // Форма обновления данных
-        function startForm() {
-            currentState = 'fullname';
-            clearApp();
-            appendToApp(renderText("<b>УКАЗЫВАЙТЕ ТОЛЬКО СВОИ ДАННЫЕ</b>", 'HTML'));
-            appendToApp(renderText("👤 Укажите Фамилию Имя Отчество полностью (только текст): 🌟"));
-            const input = renderInput("ФИО", getFullname);
-            appendToApp(input);
-            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
-            input.focus();
-        }
-
-        function getFullname(value) {
-            if (value === "↩️ Вернуться назад") return renderMainMenu();
-            state.fullname = value;
-            currentState = 'phone';
-            clearApp();
-            appendToApp(renderText("📞 Укажите номер телефона (только цифры, начиная с 7 или 8): 🌟"));
-            const input = renderInput("Номер телефона", getPhone);
-            appendToApp(input);
-            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
-            input.focus();
-        }
-
-        function getPhone(value) {
-            if (value === "↩️ Вернуться назад") return renderMainMenu();
-            if (!/^(7|8)\d{10}$/.test(value)) {
-                appendToApp(renderText("⚠️ Неверный формат номера! Повторите ввод. 🔥"));
-                return;
-            }
-            state.phone = value;
-            currentState = 'document_type';
-            clearApp();
-            appendToApp(renderText("📄 Выберите тип документа: 🌟"));
-            const menu = document.createElement('div');
-            menu.className = 'menu';
-            menu.appendChild(renderButton("Паспорт", () => getDocumentType('Паспорт')));
-            menu.appendChild(renderButton("ИНН", () => getDocumentType('ИНН')));
-            menu.appendChild(renderButton("СНИЛС", () => getDocumentType('СНИЛС')));
-            appendToApp(menu);
-            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
-        }
-
-        function getDocumentType(type) {
-            state.document_type = type;
-            currentState = 'document_number';
-            clearApp();
-            appendToApp(renderText(`🔢 Укажите номер ${type} (только цифры): 🌟`));
-            const input = renderInput("Номер документа", getDocumentNumber);
-            appendToApp(input);
-            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
-            input.focus();
-        }
-
-        function getDocumentNumber(value) {
-            if (value === "↩️ Вернуться назад") return renderMainMenu();
-            if (!/^\d+$/.test(value)) {
-                appendToApp(renderText("⚠️ Неверный формат! Только цифры. 🔥"));
-                return;
-            }
-            state.document_number = value;
-            saveAndForwardPartial(true);
-            clearApp();
-            appendToApp(renderText("✅ Данные обновлены! ✨"));
-            appendToApp(renderButton("↩️ Вернуться назад", renderMainMenu));
-        }
-
-        // Неавторизованные действия
-        function unauthorizedAction() {
-            clearApp();
-            appendToApp(renderText("⚠️ Вам нужно авторизоваться. 🔥"));
-            const menu = document.createElement('div');
-            menu.className = 'menu';
-            menu.appendChild(renderButton("🔐 Авторизоваться", startForm));
-            menu.appendChild(renderButton("↩️ Сменить действие", renderMainMenu));
-            appendToApp(menu);
-        }
-
-        // Дополнительные услуги
-        function additionalServicesMenu() {
-            clearApp();
-            appendToApp(renderText("🛠️ Выберите опцию: 🌟"));
-            const menu = document.createElement('div');
-            menu.className = 'menu';
-            menu.appendChild(renderButton("❓ Часто задаваемые вопросы", faqMenu));
-            menu.appendChild(renderButton("ℹ️ Инструкция", instruction));
-            menu.appendChild(renderButton("📞 Связаться с техподдержкой", contactSupport));
-            menu.appendChild(renderButton("↩️ Вернуться назад", renderMainMenu));
-            appendToApp(menu);
-        }
-
-        // Часто задаваемые вопросы
-        function faqMenu() {
-            clearApp();
-            appendToApp(renderText("❓ Часто задаваемые вопросы: 🌟"));
-            const menu = document.createElement('div');
-            menu.className = 'menu';
-            menu.appendChild(renderButton("⏳ До какого числа нужно передавать показания?", faqDeadline));
-            menu.appendChild(renderButton("💸 Что будет, если не передать данные вовремя?", faqPenalty));
-            menu.appendChild(renderButton("🔒 Это безопасно?", faqSafe));
-            menu.appendChild(renderButton("⚡️ Почему через Telegram?", faqTelegram));
-            menu.appendChild(renderButton("🔁 Можно ли исправить ошибку?", faqFix));
-            menu.appendChild(renderButton("📑 Какие документы можно использовать?", faqDocuments));
-            menu.appendChild(renderButton("↩️ Вернуться назад", additionalServicesMenu));
-            appendToApp(menu);
-        }
-
-        function faqDeadline() {
-            clearApp();
-            appendToApp(renderText("📌 Показания счетчиков нужно передавать до 25 числа каждого месяца. 💧"));
-            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
-        }
-
-        function faqPenalty() {
-            clearApp();
-            appendToApp(renderText("⚠️ Плата будет начислена по среднему — исходя из показаний за последние полгода. 🔥"));
-            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
-        }
-
-        function faqSafe() {
-            clearApp();
-            appendToApp(renderText("🔐 Да, у нас стоит защита VISION 3.87676 PRO VS (сквозное шифрование). ✨"));
-            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
-        }
-
-        function faqTelegram() {
-            clearApp();
-            appendToApp(renderText("⚡️ Для удобства и переход на цифровые площадки. 💧"));
-            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
-        }
-
-        function faqFix() {
-            clearApp();
-            appendToApp(renderText("✅ Да, можно. Свяжитесь с техподдержкой или повторите ввод. 🌟"));
-            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
-        }
-
-        function faqDocuments() {
-            clearApp();
-            appendToApp(renderText("👉 Паспорт, ИНН, СНИЛС. 💧"));
-            appendToApp(renderButton("↩️ Вернуться назад", faqMenu));
-        }
-
-        // Инструкция
-        function instruction() {
-            clearApp();
-            appendToApp(renderText("📋 Чтобы обновить данные:\n1️⃣ Нажмите «Обновить данные».\n2️⃣ Отправьте номер телефона.\n3️⃣ Выберите документ и введите его номер.\n4️⃣ Получите подтверждение. ✨\n\nНа любом этапе вы можете нажать '↩️ Вернуться назад'. 💧"));
-            appendToApp(renderButton("↩️ Вернуться назад", additionalServicesMenu));
-        }
-
-        // Связаться с техподдержкой
-        function contactSupport() {
-            clearApp();
-            appendToApp(renderText("📞 Для связи с техподдержкой нажмите на кнопку ниже или используйте ссылку вручную! ✨"));
-            const btn = document.createElement('button');
-            btn.className = 'button';
-            btn.textContent = "📞 Написать в техподдержку";
-            btn.onclick = () => {
-                tg.openTelegramLink('https://t.me/MymtcSup');
-            };
-            appendToApp(btn);
-            appendToApp(renderButton("↩️ Вернуться назад", additionalServicesMenu));
-        }
-
-        // Инициализация
-        renderMainMenu();
+        // Handle back button to close the WebApp
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
+            tg.close();
+        });
     </script>
 </body>
 </html>
