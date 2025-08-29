@@ -2,80 +2,121 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>ЖКХ мини-приложение</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>МКС Мини-приложение</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #0a0a23;
+      color: #fff;
       margin: 0;
       padding: 0;
-      background: #f4f6f9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-    }
-    header {
-      width: 100%;
-      background: #0077ff;
-      color: #fff;
       text-align: center;
-      padding: 15px 0;
-      font-size: 20px;
     }
-    .container {
-      margin-top: 20px;
+    .screen {
+      display: none;
       padding: 20px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .active {
+      display: block;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #ffcc00;
+    }
+    .btn {
+      display: block;
       width: 90%;
-      max-width: 400px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      background: #0077ff;
+      margin: 10px auto;
+      padding: 15px;
+      font-size: 18px;
       border: none;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 16px;
+      border-radius: 12px;
       cursor: pointer;
+      background: #1e1e3f;
+      color: #fff;
+      transition: 0.2s;
     }
-    button:hover {
-      background: #005fcc;
+    .btn:hover {
+      background: #2f2f6d;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 14px;
+    .back {
+      background: #444;
     }
   </style>
-  <script>
-    // Отправка данных обратно в Telegram WebApp
-    function sendData(action) {
-      const data = {
-        action: action,
-        meter: document.getElementById("meter")?.value || ""
-      };
-      Telegram.WebApp.sendData(JSON.stringify(data));
-    }
-  </script>
 </head>
 <body>
-  <header>ЖКХ — мини-приложение</header>
-  <div class="container">
-    <h3>Передача показаний</h3>
-    <input type="number" id="meter" placeholder="Введите показания счетчика" />
-    <button onclick="sendData('send_meter')">Отправить</button>
-    <hr>
-    <button onclick="sendData('refresh')">🔄 Обновить данные</button>
-    <button onclick="sendData('tariff')">💰 Тарифы</button>
+
+  <!-- Главное меню -->
+  <div id="menu" class="screen active">
+    <h1>🏠 Добро пожаловать в МКС-бот!</h1>
+    <button class="btn" onclick="showScreen('update')">📝 Обновить данные</button>
+    <button class="btn" onclick="alert('Требуется авторизация 🔐')">🔄 Поменять тариф</button>
+    <button class="btn" onclick="alert('Требуется авторизация 🔐')">💳 Проверить баланс</button>
+    <button class="btn" onclick="alert('Требуется авторизация 🔐')">💸 Пополнить баланс</button>
+    <button class="btn" onclick="showScreen('services')">🛠️ Дополнительные услуги</button>
   </div>
+
+  <!-- Обновить данные -->
+  <div id="update" class="screen">
+    <h1>📝 Обновление данных</h1>
+    <p>Введите ваши данные (ФИО, телефон, документ):</p>
+    <input type="text" placeholder="ФИО" class="btn">
+    <input type="text" placeholder="Телефон" class="btn">
+    <input type="text" placeholder="Документ" class="btn">
+    <button class="btn" onclick="alert('✅ Данные сохранены')">Отправить</button>
+    <button class="btn back" onclick="showScreen('menu')">↩️ Вернуться назад</button>
+  </div>
+
+  <!-- Дополнительные услуги -->
+  <div id="services" class="screen">
+    <h1>🛠️ Дополнительные услуги</h1>
+    <button class="btn" onclick="showScreen('faq')">❓ Часто задаваемые вопросы</button>
+    <button class="btn" onclick="showScreen('instruction')">ℹ️ Инструкция</button>
+    <button class="btn" onclick="showScreen('support')">📞 Связаться с техподдержкой</button>
+    <button class="btn back" onclick="showScreen('menu')">↩️ Вернуться назад</button>
+  </div>
+
+  <!-- FAQ -->
+  <div id="faq" class="screen">
+    <h1>❓ Вопросы</h1>
+    <button class="btn" onclick="alert('📌 Показания передавать до 25 числа')">⏳ До какого числа?</button>
+    <button class="btn" onclick="alert('⚠️ Если не передать, плата по среднему')">💸 Что будет, если не вовремя?</button>
+    <button class="btn" onclick="alert('🔐 Да, данные защищены')">🔒 Это безопасно?</button>
+    <button class="btn" onclick="alert('⚡️ Для удобства цифровизации')">⚡️ Почему через Telegram?</button>
+    <button class="btn" onclick="alert('✅ Ошибку можно исправить повторным вводом')">🔁 Можно ли исправить?</button>
+    <button class="btn" onclick="alert('👉 Паспорт, ИНН, СНИЛС')">📑 Какие документы?</button>
+    <button class="btn back" onclick="showScreen('services')">↩️ Вернуться назад</button>
+  </div>
+
+  <!-- Инструкция -->
+  <div id="instruction" class="screen">
+    <h1>ℹ️ Инструкция</h1>
+    <p>
+      📋 Чтобы обновить данные:<br>
+      1️⃣ Нажмите «Обновить данные»<br>
+      2️⃣ Введите телефон<br>
+      3️⃣ Выберите документ и введите номер<br>
+      4️⃣ Получите подтверждение ✨
+    </p>
+    <button class="btn back" onclick="showScreen('services')">↩️ Вернуться назад</button>
+  </div>
+
+  <!-- Поддержка -->
+  <div id="support" class="screen">
+    <h1>📞 Техподдержка</h1>
+    <p>Свяжитесь с оператором:</p>
+    <a href="https://t.me/MymtcSup" target="_blank">
+      <button class="btn">📞 Написать в поддержку</button>
+    </a>
+    <button class="btn back" onclick="showScreen('services')">↩️ Вернуться назад</button>
+  </div>
+
+  <script>
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
 </body>
 </html>
