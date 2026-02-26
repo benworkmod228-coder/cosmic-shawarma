@@ -10,8 +10,8 @@
 <style>
 body{
 margin:0;
-font-family:Segoe UI, sans-serif;
-background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
+font-family:Segoe UI,sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1c1c1c);
 color:white;
 }
 
@@ -37,16 +37,13 @@ background:none;
 color:white;
 font-weight:bold;
 cursor:pointer;
-transition:0.3s;
 }
 
 .tabs button.active{
 border-bottom:3px solid #00ffc8;
 }
 
-.container{
-padding:20px;
-}
+.container{padding:20px;}
 
 .card{
 background:#1e1e1e;
@@ -54,12 +51,6 @@ padding:20px;
 border-radius:15px;
 margin-bottom:20px;
 box-shadow:0 0 15px rgba(0,255,200,0.05);
-animation:fadeIn 0.4s ease;
-}
-
-@keyframes fadeIn{
-from{opacity:0;transform:translateY(10px);}
-to{opacity:1;transform:translateY(0);}
 }
 
 input,textarea,select{
@@ -82,11 +73,6 @@ font-weight:bold;
 cursor:pointer;
 background:linear-gradient(90deg,#00ffc8,#00b3ff);
 color:black;
-transition:0.3s;
-}
-
-button.primary:hover{
-transform:scale(1.03);
 }
 
 .deal{
@@ -96,24 +82,7 @@ border-radius:12px;
 margin-top:10px;
 }
 
-.status{
-font-size:12px;
-padding:4px 8px;
-border-radius:8px;
-display:inline-block;
-}
-
-.pending{background:#444;}
-.accepted{background:#0066ff;}
-.completed{background:#00aa66;}
-.rejected{background:#aa0000;}
-
 .hidden{display:none;}
-
-.rating{
-color:#00ffc8;
-font-size:18px;
-}
 </style>
 </head>
 
@@ -123,14 +92,13 @@ font-size:18px;
 
 <div class="tabs">
 <button onclick="switchTab('create')" id="tab-create" class="active">Создать</button>
-<button onclick="switchTab('deals')" id="tab-deals">Сделки</button>
+<button onclick="switchTab('history')" id="tab-history">История</button>
 <button onclick="switchTab('profile')" id="tab-profile">Профиль</button>
 </div>
 
 <div class="container">
 
 <div id="create" class="tab-content">
-
 <div class="card">
 <h3>Создание сделки</h3>
 
@@ -144,7 +112,7 @@ font-size:18px;
 <input type="number" id="amount" placeholder="Сумма от 2$" min="2">
 
 <textarea id="description" rows="5"
-placeholder="Максимально подробно опишите условия сделки: что передаётся, сроки, формат, проверки, ответственность сторон...">
+placeholder="Максимально подробно опишите условия сделки: предмет сделки, сроки выполнения, формат передачи, требования к качеству, способы проверки и ответственность сторон.">
 </textarea>
 
 <input type="file" id="fileUpload">
@@ -154,10 +122,12 @@ placeholder="Максимально подробно опишите услови
 </div>
 </div>
 
-<div id="deals" class="tab-content hidden">
+<div id="history" class="tab-content hidden">
 <div class="card">
-<h3>Мои сделки</h3>
-<div id="dealsList"></div>
+<h3>История сделок</h3>
+<div id="historyList">
+<div class="deal">История появится после создания сделок</div>
+</div>
 </div>
 </div>
 
@@ -165,8 +135,7 @@ placeholder="Максимально подробно опишите услови
 <div class="card">
 <h3>Мой профиль</h3>
 <div>ID: <span id="myId"></span></div>
-<div>Рейтинг:</div>
-<div class="rating">★★★★★</div>
+<div>Статус: Надёжный участник</div>
 </div>
 </div>
 
@@ -174,7 +143,6 @@ placeholder="Максимально подробно опишите услови
 
 <script>
 
-const API_URL = "https://nondefinite-retreative-cheree.ngrok-free.dev";
 const tg = window.Telegram.WebApp;
 tg.expand();
 
@@ -188,7 +156,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"
 document.getElementById("tab-"+tab).classList.add("active");
 }
 
-async function createDeal(){
+function createDeal(){
 
 const role=document.getElementById("role").value;
 const secondUser=document.getElementById("secondUser").value;
@@ -197,61 +165,37 @@ const description=document.getElementById("description").value;
 const fileInput=document.getElementById("fileUpload");
 
 if(!secondUser||amount<2||description.length<20){
-alert("Заполните все поля корректно (мин 2$ и подробное описание)");
+alert("Заполните корректно все поля (мин 2$ и подробное описание)");
 return;
 }
 
-const formData=new FormData();
-formData.append("role",role);
-formData.append("creator_id",tg.initDataUnsafe.user.id);
-formData.append("second_user_id",secondUser);
-formData.append("amount",amount);
-formData.append("description",description);
-formData.append("initData",tg.initData);
+const fileName=fileInput.files.length?fileInput.files[0].name:null;
 
-if(fileInput.files.length){
-formData.append("file",fileInput.files[0]);
+const dealData={
+creator_id: tg.initDataUnsafe.user.id,
+second_user_id: parseInt(secondUser),
+amount: amount,
+description: description,
+file_name: fileName
+};
+
+tg.sendData(JSON.stringify(dealData));
+
+addToHistory(amount, secondUser);
+
+alert("Сделка отправлена гаранту");
 }
 
-const response=await fetch(API_URL+"/create_deal",{method:"POST",body:formData});
-const result=await response.json();
-
-if(result.success){
-alert("Сделка создана!");
-loadDeals();
-}else{
-alert("Ошибка создания сделки");
-}
-}
-
-async function loadDeals(){
-const response=await fetch(API_URL+"/my_deals?user_id="+tg.initDataUnsafe.user.id);
-const deals=await response.json();
-renderDeals(deals);
-}
-
-function renderDeals(deals){
-const list=document.getElementById("dealsList");
-list.innerHTML="";
-
-if(deals.length===0){
-list.innerHTML="<div class='deal'>Нет сделок</div>";
-return;
-}
-
-deals.forEach(d=>{
-list.innerHTML+=`
+function addToHistory(amount,user){
+const history=document.getElementById("historyList");
+history.innerHTML+=`
 <div class="deal">
-💼 ${d.amount}$<br>
-👤 ${d.second_user_id}<br>
-📂 ${d.file_name||"Нет файла"}<br>
-<span class="status ${d.status}">${d.status}</span>
+💼 ${amount}$ <br>
+👤 Участник: ${user} <br>
+⏳ Статус: Ожидает подтверждения
 </div>
 `;
-});
 }
-
-loadDeals();
 
 </script>
 
