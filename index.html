@@ -1,122 +1,259 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>МКС Мини-приложение</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0a0a23;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    .screen {
-      display: none;
-      padding: 20px;
-    }
-    .active {
-      display: block;
-    }
-    h1 {
-      margin-bottom: 20px;
-      color: #ffcc00;
-    }
-    .btn {
-      display: block;
-      width: 90%;
-      margin: 10px auto;
-      padding: 15px;
-      font-size: 18px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      background: #1e1e3f;
-      color: #fff;
-      transition: 0.2s;
-    }
-    .btn:hover {
-      background: #2f2f6d;
-    }
-    .back {
-      background: #444;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garant_Squad</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI, sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a1a);
+color:white;
+}
+
+header{
+padding:18px;
+text-align:center;
+font-size:22px;
+font-weight:bold;
+background:#111;
+box-shadow:0 0 20px rgba(0,255,200,0.2);
+}
+
+.tabs{
+display:flex;
+background:#151515;
+}
+
+.tabs button{
+flex:1;
+padding:12px;
+border:none;
+background:none;
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+.tabs button.active{
+border-bottom:3px solid #00ffc8;
+}
+
+.container{
+padding:20px;
+}
+
+.card{
+background:#1e1e1e;
+padding:20px;
+border-radius:15px;
+margin-bottom:20px;
+box-shadow:0 0 15px rgba(0,255,200,0.05);
+animation:fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+input,textarea,select{
+width:100%;
+padding:12px;
+margin-top:8px;
+margin-bottom:15px;
+border-radius:10px;
+border:none;
+background:#2a2a2a;
+color:white;
+}
+
+button.primary{
+width:100%;
+padding:14px;
+border-radius:12px;
+border:none;
+font-weight:bold;
+cursor:pointer;
+background:linear-gradient(90deg,#00ffc8,#00b3ff);
+color:black;
+transition:0.3s;
+}
+
+button.primary:hover{
+transform:scale(1.03);
+}
+
+.deal{
+background:#141414;
+padding:15px;
+border-radius:12px;
+margin-top:10px;
+}
+
+.status{
+font-size:12px;
+padding:4px 8px;
+border-radius:8px;
+display:inline-block;
+}
+
+.pending{background:#444;}
+.accepted{background:#0066ff;}
+.completed{background:#00aa66;}
+.rejected{background:#aa0000;}
+
+.hidden{display:none;}
+
+.rating{
+color:#00ffc8;
+font-size:18px;
+}
+</style>
 </head>
+
 <body>
 
-  <!-- Главное меню -->
-  <div id="menu" class="screen active">
-    <h1>🏠 Добро пожаловать в МКС-бот!</h1>
-    <button class="btn" onclick="showScreen('update')">📝 Обновить данные</button>
-    <button class="btn" onclick="alert('Требуется авторизация 🔐')">🔄 Поменять тариф</button>
-    <button class="btn" onclick="alert('Требуется авторизация 🔐')">💳 Проверить баланс</button>
-    <button class="btn" onclick="alert('Требуется авторизация 🔐')">💸 Пополнить баланс</button>
-    <button class="btn" onclick="showScreen('services')">🛠️ Дополнительные услуги</button>
-  </div>
+<header>🛡 Garant_Squad</header>
 
-  <!-- Обновить данные -->
-  <div id="update" class="screen">
-    <h1>📝 Обновление данных</h1>
-    <p>Введите ваши данные (ФИО, телефон, документ):</p>
-    <input type="text" placeholder="ФИО" class="btn">
-    <input type="text" placeholder="Телефон" class="btn">
-    <input type="text" placeholder="Документ" class="btn">
-    <button class="btn" onclick="alert('✅ Данные сохранены')">Отправить</button>
-    <button class="btn back" onclick="showScreen('menu')">↩️ Вернуться назад</button>
-  </div>
+<div class="tabs">
+<button onclick="switchTab('create')" id="tab-create" class="active">Создать</button>
+<button onclick="switchTab('deals')" id="tab-deals">Сделки</button>
+<button onclick="switchTab('profile')" id="tab-profile">Профиль</button>
+</div>
 
-  <!-- Дополнительные услуги -->
-  <div id="services" class="screen">
-    <h1>🛠️ Дополнительные услуги</h1>
-    <button class="btn" onclick="showScreen('faq')">❓ Часто задаваемые вопросы</button>
-    <button class="btn" onclick="showScreen('instruction')">ℹ️ Инструкция</button>
-    <button class="btn" onclick="showScreen('support')">📞 Связаться с техподдержкой</button>
-    <button class="btn back" onclick="showScreen('menu')">↩️ Вернуться назад</button>
-  </div>
+<div class="container">
 
-  <!-- FAQ -->
-  <div id="faq" class="screen">
-    <h1>❓ Вопросы</h1>
-    <button class="btn" onclick="alert('📌 Показания передавать до 25 числа')">⏳ До какого числа?</button>
-    <button class="btn" onclick="alert('⚠️ Если не передать, плата по среднему')">💸 Что будет, если не вовремя?</button>
-    <button class="btn" onclick="alert('🔐 Да, данные защищены')">🔒 Это безопасно?</button>
-    <button class="btn" onclick="alert('⚡️ Для удобства цифровизации')">⚡️ Почему через Telegram?</button>
-    <button class="btn" onclick="alert('✅ Ошибку можно исправить повторным вводом')">🔁 Можно ли исправить?</button>
-    <button class="btn" onclick="alert('👉 Паспорт, ИНН, СНИЛС')">📑 Какие документы?</button>
-    <button class="btn back" onclick="showScreen('services')">↩️ Вернуться назад</button>
-  </div>
+<div id="create" class="tab-content">
 
-  <!-- Инструкция -->
-  <div id="instruction" class="screen">
-    <h1>ℹ️ Инструкция</h1>
-    <p>
-      📋 Чтобы обновить данные:<br>
-      1️⃣ Нажмите «Обновить данные»<br>
-      2️⃣ Введите телефон<br>
-      3️⃣ Выберите документ и введите номер<br>
-      4️⃣ Получите подтверждение ✨
-    </p>
-    <button class="btn back" onclick="showScreen('services')">↩️ Вернуться назад</button>
-  </div>
+<div class="card">
+<h3>Создание сделки</h3>
 
-  <!-- Поддержка -->
-  <div id="support" class="screen">
-    <h1>📞 Техподдержка</h1>
-    <p>Свяжитесь с оператором:</p>
-    <a href="https://t.me/MymtcSup" target="_blank">
-      <button class="btn">📞 Написать в поддержку</button>
-    </a>
-    <button class="btn back" onclick="showScreen('services')">↩️ Вернуться назад</button>
-  </div>
+<select id="role">
+<option value="buyer">Я покупатель</option>
+<option value="seller">Я продавец</option>
+</select>
 
-  <script>
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-  </script>
+<input type="number" id="secondUser" placeholder="ID второго участника">
+
+<input type="number" id="amount" placeholder="Сумма от 2$" min="2">
+
+<textarea id="description" rows="5"
+placeholder="Максимально подробно опишите условия сделки: что передаётся, сроки, формат, проверки, ответственность сторон...">
+</textarea>
+
+<input type="file" id="fileUpload">
+
+<button class="primary" onclick="createDeal()">Создать сделку</button>
+
+</div>
+</div>
+
+<div id="deals" class="tab-content hidden">
+<div class="card">
+<h3>Мои сделки</h3>
+<div id="dealsList"></div>
+</div>
+</div>
+
+<div id="profile" class="tab-content hidden">
+<div class="card">
+<h3>Мой профиль</h3>
+<div>ID: <span id="myId"></span></div>
+<div>Рейтинг:</div>
+<div class="rating">★★★★★</div>
+</div>
+</div>
+
+</div>
+
+<script>
+
+const API_URL = "https://nondefinite-retreative-cheree.ngrok-free.dev";
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+document.getElementById("myId").innerText = tg.initDataUnsafe.user.id;
+
+function switchTab(tab){
+document.querySelectorAll(".tab-content").forEach(t=>t.classList.add("hidden"));
+document.getElementById(tab).classList.remove("hidden");
+
+document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+document.getElementById("tab-"+tab).classList.add("active");
+}
+
+async function createDeal(){
+
+const role=document.getElementById("role").value;
+const secondUser=document.getElementById("secondUser").value;
+const amount=parseFloat(document.getElementById("amount").value);
+const description=document.getElementById("description").value;
+const fileInput=document.getElementById("fileUpload");
+
+if(!secondUser||amount<2||description.length<20){
+alert("Заполните все поля корректно (мин 2$ и подробное описание)");
+return;
+}
+
+const formData=new FormData();
+formData.append("role",role);
+formData.append("creator_id",tg.initDataUnsafe.user.id);
+formData.append("second_user_id",secondUser);
+formData.append("amount",amount);
+formData.append("description",description);
+formData.append("initData",tg.initData);
+
+if(fileInput.files.length){
+formData.append("file",fileInput.files[0]);
+}
+
+const response=await fetch(API_URL+"/create_deal",{method:"POST",body:formData});
+const result=await response.json();
+
+if(result.success){
+alert("Сделка создана!");
+loadDeals();
+}else{
+alert("Ошибка создания сделки");
+}
+}
+
+async function loadDeals(){
+const response=await fetch(API_URL+"/my_deals?user_id="+tg.initDataUnsafe.user.id);
+const deals=await response.json();
+renderDeals(deals);
+}
+
+function renderDeals(deals){
+const list=document.getElementById("dealsList");
+list.innerHTML="";
+
+if(deals.length===0){
+list.innerHTML="<div class='deal'>Нет сделок</div>";
+return;
+}
+
+deals.forEach(d=>{
+list.innerHTML+=`
+<div class="deal">
+💼 ${d.amount}$<br>
+👤 ${d.second_user_id}<br>
+📂 ${d.file_name||"Нет файла"}<br>
+<span class="status ${d.status}">${d.status}</span>
+</div>
+`;
+});
+}
+
+loadDeals();
+
+</script>
+
 </body>
 </html>
