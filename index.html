@@ -1,202 +1,22 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garant_Squad</title>
-
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<style>
-body{
-margin:0;
-font-family:Segoe UI,sans-serif;
-background:linear-gradient(135deg,#0f0f0f,#1c1c1c);
-color:white;
-}
-
-header{
-padding:18px;
-text-align:center;
-font-size:22px;
-font-weight:bold;
-background:#111;
-box-shadow:0 0 20px rgba(0,255,200,0.2);
-}
-
-.tabs{
-display:flex;
-background:#151515;
-}
-
-.tabs button{
-flex:1;
-padding:12px;
-border:none;
-background:none;
-color:white;
-font-weight:bold;
-cursor:pointer;
-}
-
-.tabs button.active{
-border-bottom:3px solid #00ffc8;
-}
-
-.container{padding:20px;}
-
-.card{
-background:#1e1e1e;
-padding:20px;
-border-radius:15px;
-margin-bottom:20px;
-box-shadow:0 0 15px rgba(0,255,200,0.05);
-}
-
-input,textarea,select{
-width:100%;
-padding:12px;
-margin-top:8px;
-margin-bottom:15px;
-border-radius:10px;
-border:none;
-background:#2a2a2a;
-color:white;
-}
-
-button.primary{
-width:100%;
-padding:14px;
-border-radius:12px;
-border:none;
-font-weight:bold;
-cursor:pointer;
-background:linear-gradient(90deg,#00ffc8,#00b3ff);
-color:black;
-}
-
-.deal{
-background:#141414;
-padding:15px;
-border-radius:12px;
-margin-top:10px;
-}
-
-.hidden{display:none;}
-</style>
 </head>
+<body style="background:black;color:white;text-align:center;padding-top:50px;">
 
-<body>
+<h2>Тест WebApp</h2>
 
-<header>🛡 Garant_Squad</header>
-
-<div class="tabs">
-<button onclick="switchTab('create')" id="tab-create" class="active">Создать</button>
-<button onclick="switchTab('history')" id="tab-history">История</button>
-<button onclick="switchTab('profile')" id="tab-profile">Профиль</button>
-</div>
-
-<div class="container">
-
-<div id="create" class="tab-content">
-<div class="card">
-<h3>Создание сделки</h3>
-
-<select id="role">
-<option value="buyer">Я покупатель</option>
-<option value="seller">Я продавец</option>
-</select>
-
-<input type="number" id="secondUser" placeholder="ID второго участника">
-
-<input type="number" id="amount" placeholder="Сумма от 2$" min="2">
-
-<textarea id="description" rows="5"
-placeholder="Максимально подробно опишите условия сделки: предмет сделки, сроки выполнения, формат передачи, требования к качеству, способы проверки и ответственность сторон.">
-</textarea>
-
-<input type="file" id="fileUpload">
-
-<button class="primary" onclick="createDeal()">Создать сделку</button>
-
-</div>
-</div>
-
-<div id="history" class="tab-content hidden">
-<div class="card">
-<h3>История сделок</h3>
-<div id="historyList">
-<div class="deal">История появится после создания сделок</div>
-</div>
-</div>
-</div>
-
-<div id="profile" class="tab-content hidden">
-<div class="card">
-<h3>Мой профиль</h3>
-<div>ID: <span id="myId"></span></div>
-<div>Статус: Надёжный участник</div>
-</div>
-</div>
-
-</div>
+<button onclick="sendTest()">Отправить тест</button>
 
 <script>
-
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-document.getElementById("myId").innerText = tg.initDataUnsafe.user.id;
-
-function switchTab(tab){
-document.querySelectorAll(".tab-content").forEach(t=>t.classList.add("hidden"));
-document.getElementById(tab).classList.remove("hidden");
-
-document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
-document.getElementById("tab-"+tab).classList.add("active");
+function sendTest(){
+    tg.sendData("TEST_MESSAGE");
 }
-
-function createDeal(){
-
-const role=document.getElementById("role").value;
-const secondUser=document.getElementById("secondUser").value;
-const amount=parseFloat(document.getElementById("amount").value);
-const description=document.getElementById("description").value;
-const fileInput=document.getElementById("fileUpload");
-
-if(!secondUser||amount<2||description.length<20){
-alert("Заполните корректно все поля (мин 2$ и подробное описание)");
-return;
-}
-
-const fileName=fileInput.files.length?fileInput.files[0].name:null;
-
-const dealData={
-creator_id: tg.initDataUnsafe.user.id,
-second_user_id: parseInt(secondUser),
-amount: amount,
-description: description,
-file_name: fileName
-};
-
-tg.sendData(JSON.stringify(dealData));
-
-addToHistory(amount, secondUser);
-
-alert("Сделка отправлена гаранту");
-}
-
-function addToHistory(amount,user){
-const history=document.getElementById("historyList");
-history.innerHTML+=`
-<div class="deal">
-💼 ${amount}$ <br>
-👤 Участник: ${user} <br>
-⏳ Статус: Ожидает подтверждения
-</div>
-`;
-}
-
 </script>
 
 </body>
