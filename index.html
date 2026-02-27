@@ -8,13 +8,20 @@
 
 <h2>Тест WebApp</h2>
 
-<button onclick="sendTest()">Отправить тест</button>
+<button onclick="sendTest()" style="padding:15px;font-size:18px;">
+Отправить тест
+</button>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.expand();
 
 function sendTest(){
+    if (!tg.initDataUnsafe || !tg.initDataUnsafe.user){
+        alert("WebApp не запущен из Telegram!");
+        return;
+    }
+
     tg.sendData("TEST_MESSAGE");
 }
 </script>
