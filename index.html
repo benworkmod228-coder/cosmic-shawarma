@@ -1,259 +1,258 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Ben's Setup Tycoon</title>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-
-<style>
-
-body{
-margin:0;
-overflow:hidden;
-font-family:Arial;
-background:black;
-color:white;
-}
-
-#ui{
-position:fixed;
-top:10px;
-left:10px;
-z-index:10;
-}
-
-#shop{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:rgba(0,0,0,0.8);
-padding:10px;
-display:flex;
-overflow-x:auto;
-}
-
-.item{
-background:#222;
-border-radius:10px;
-padding:10px;
-margin:5px;
-min-width:120px;
-text-align:center;
-}
-
-button{
-padding:5px;
-border:none;
-background:#00c3ff;
-border-radius:5px;
-color:white;
-cursor:pointer;
-}
-
-</style>
-
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>gEThAB</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #intro { position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; background: rgba(0,0,0,0.8); color: white; padding: 20px; z-index: 10; text-align: center; }
+        #choice { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: none; }
+        #shop { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 10px; z-index: 10; display: none; }
+        #points { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; z-index: 10; }
+        #level { position: absolute; top: 10px; right: 10px; color: white; font-size: 20px; z-index: 10; }
+        button { margin: 5px; padding: 10px; font-size: 16px; }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-
 <body>
-
-<div id="ui">
-
-<div>⚡ Очки: <span id="points">0</span></div>
-<div>⭐ XP: <span id="xp">0</span></div>
-
-</div>
-
-
-<div id="shop">
-
-<div class="item">
-🎧 Наушники<br>
-<button onclick="buy('headphones',100)">100</button>
-</div>
-
-<div class="item">
-🖥 Монитор<br>
-<button onclick="buy('monitor',200)">200</button>
-</div>
-
-<div class="item">
-⌨ Клавиатура<br>
-<button onclick="buy('keyboard',300)">300</button>
-</div>
-
-<div class="item">
-🪑 Кресло<br>
-<button onclick="buy('chair',400)">400</button>
-</div>
-
-<div class="item">
-🧸 Декор<br>
-<button onclick="buy('decor',600)">600</button>
-</div>
-
-</div>
-
-
-<script>
-
-let scene = new THREE.Scene()
-let camera = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000)
-let renderer = new THREE.WebGLRenderer()
-
-renderer.setSize(window.innerWidth,window.innerHeight)
-
-document.body.appendChild(renderer.domElement)
-
-camera.position.z = 5
-
-let light = new THREE.PointLight(0xffffff,1)
-light.position.set(10,10,10)
-scene.add(light)
-
-let points=0
-let xp=0
-let clickPower=1
-
-let player
-let headphones
-
-function createPlayer(){
-
-let geo = new THREE.BoxGeometry(1,2,1)
-let mat = new THREE.MeshStandardMaterial({color:0x00ffcc})
-
-player = new THREE.Mesh(geo,mat)
-
-scene.add(player)
-
-}
-
-function createChair(){
-
-let geo = new THREE.BoxGeometry(1.5,0.5,1.5)
-let mat = new THREE.MeshStandardMaterial({color:0x555555})
-
-let chair = new THREE.Mesh(geo,mat)
-
-chair.position.y = -1.5
-
-scene.add(chair)
-
-}
-
-function createDesk(){
-
-let geo = new THREE.BoxGeometry(3,0.3,1.5)
-let mat = new THREE.MeshStandardMaterial({color:0x222222})
-
-let desk = new THREE.Mesh(geo,mat)
-
-desk.position.y = -0.5
-desk.position.z = -1
-
-scene.add(desk)
-
-}
-
-function createPC(){
-
-let geo = new THREE.BoxGeometry(0.7,1,0.7)
-let mat = new THREE.MeshStandardMaterial({color:0x111111})
-
-let pc = new THREE.Mesh(geo,mat)
-
-pc.position.z = -1
-pc.position.x = 1
-
-scene.add(pc)
-
-}
-
-function buy(item,cost){
-
-if(points<cost) return
-
-points-=cost
-
-if(item==="headphones"){
-
-let geo = new THREE.TorusGeometry(0.6,0.1,16,100)
-let mat = new THREE.MeshStandardMaterial({color:0xff0000})
-
-headphones = new THREE.Mesh(geo,mat)
-
-headphones.position.y=1
-
-player.add(headphones)
-
-}
-
-if(item==="monitor"){
-
-let geo = new THREE.BoxGeometry(1.2,0.8,0.1)
-let mat = new THREE.MeshStandardMaterial({color:0x0000ff})
-
-let monitor = new THREE.Mesh(geo,mat)
-
-monitor.position.z=-1
-monitor.position.y=0.3
-
-scene.add(monitor)
-
-}
-
-if(item==="chair"){
-
-createChair()
-
-}
-
-update()
-
-}
-
-function clickGame(){
-
-points+=clickPower
-xp+=1
-
-update()
-
-}
-
-function update(){
-
-document.getElementById("points").innerText=Math.floor(points)
-document.getElementById("xp").innerText=xp
-
-}
-
-window.addEventListener("click",clickGame)
-
-function animate(){
-
-requestAnimationFrame(animate)
-
-player.rotation.y +=0.01
-
-renderer.render(scene,camera)
-
-}
-
-createPlayer()
-createDesk()
-createPC()
-
-animate()
-
-</script>
-
+    <div id="intro">
+        <h1>Добро пожаловать в gEThAB!</h1>
+        <p>Это крутая кликер-игра, где ты прокачиваешь свой геймерский сетап. Создано Ben.<br>
+        Ты начинаешь на уровне 'Холодник' с простым табуретом и слабым ПК в холодной комнате. Кликай на экран, чтобы зарабатывать очки, покупай апгрейды, чтобы одеть персонажа и улучшить место.<br>
+        Уровни: 1 - Холодник, 2 - Клоузер, 3 - Финал, 4 - Легенда.<br>
+        Прокачивайся и стань ultimate геймером! Удачи!</p>
+        <button onclick="startGame()">Начать</button>
+    </div>
+    <div id="choice">
+        <button onclick="chooseGender('boy')">Мальчик</button>
+        <button onclick="chooseGender('girl')">Девочка</button>
+    </div>
+    <div id="points">Очки: 0</div>
+    <div id="level">Уровень: 1 - Холодник</div>
+    <div id="shop">
+        <h3>Магазин</h3>
+        <button onclick="buy('headphones')">Купить наушники (100 очков)</button><br>
+        <button onclick="buy('monitor')">Апгрейд монитора (200 очков)</button><br>
+        <button onclick="buy('keyboard')">Апгрейд клавиатуры (150 очков)</button><br>
+        <button onclick="buy('chair')">Апгрейд кресла (300 очков)</button><br>
+        <button onclick="buy('mouse')">Апгрейд мышки (100 очков)</button>
+    </div>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.module.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.132.2/examples/jsm/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.132.2/examples/jsm/controls/OrbitControls.js';
+
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+
+        let scene, camera, renderer, controls, character, mixer;
+        let points = 0;
+        let level = 1;
+        let levels = ['Холодник', 'Клоузер', 'Финал', 'Легенда'];
+        let gender = '';
+        let upgrades = {
+            headphones: false,
+            monitor: 0,
+            keyboard: 0,
+            chair: 0,
+            mouse: 0
+        };
+        let chairMesh, monitorMesh, keyboardMesh, mouseMesh;
+
+        function startGame() {
+            document.getElementById('intro').style.display = 'none';
+            document.getElementById('choice').style.display = 'block';
+        }
+
+        function chooseGender(g) {
+            gender = g;
+            document.getElementById('choice').style.display = 'none';
+            document.getElementById('shop').style.display = 'block';
+            init3D();
+            animate();
+            loadSaved();
+        }
+
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            let dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(5, 5, 5);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // Floor
+            let floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Desk
+            let desk = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 1), new THREE.MeshStandardMaterial({ color: 0x8b4513 }));
+            desk.position.y = 0.8;
+            desk.castShadow = true;
+            desk.receiveShadow = true;
+            scene.add(desk);
+
+            // Chair basic
+            chairMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: 0x808080 }));
+            chairMesh.position.set(0, 0.25, -0.5);
+            chairMesh.castShadow = true;
+            scene.add(chairMesh);
+
+            // Monitor basic
+            monitorMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 0.7, 0.1), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+            monitorMesh.position.set(0, 1.15, 0.4);
+            monitorMesh.castShadow = true;
+            scene.add(monitorMesh);
+
+            // Keyboard basic
+            keyboardMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 0.05, 0.3), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+            keyboardMesh.position.set(0, 0.85, 0.2);
+            keyboardMesh.castShadow = true;
+            scene.add(keyboardMesh);
+
+            // Mouse basic
+            mouseMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.15), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            mouseMesh.position.set(0.6, 0.85, 0.2);
+            mouseMesh.castShadow = true;
+            scene.add(mouseMesh);
+
+            // Load character
+            const loader = new GLTFLoader();
+            let modelUrl = gender === 'boy' ? 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/gltf/CesiumMan.glb' : 'https://raw.githubusercontent.com/hmthanh/3d-human-model/main/TranThiNgocTham.glb';
+            loader.load(modelUrl, (gltf) => {
+                character = gltf.scene;
+                character.scale.set(0.5, 0.5, 0.5);
+                character.position.set(0, 0.5, -0.5);
+                character.castShadow = true;
+                scene.add(character);
+
+                if (gltf.animations.length > 0) {
+                    mixer = new THREE.AnimationMixer(character);
+                    mixer.clipAction(gltf.animations[0]).play();
+                }
+
+                if (gender === 'girl') {
+                    character.traverse((child) => {
+                        if (child.isMesh) child.material.color.multiplyScalar(1.2); // slight adjustment
+                    });
+                }
+            });
+
+            camera.position.set(0, 2, 3);
+            camera.lookAt(0, 1, 0);
+
+            renderer.domElement.addEventListener('click', onClick);
+        }
+
+        function onClick() {
+            points += 1 + level;
+            updateUI();
+            // Simple animation: bob character
+            if (character) character.position.y += 0.05;
+            setTimeout(() => { if (character) character.position.y -= 0.05; }, 100);
+        }
+
+        function updateUI() {
+            document.getElementById('points').innerText = `Очки: ${points}`;
+            document.getElementById('level').innerText = `Уровень: ${level} - ${levels[level - 1]}`;
+        }
+
+        function buy(item) {
+            let cost = { headphones: 100, monitor: 200, keyboard: 150, chair: 300, mouse: 100 }[item];
+            if (upgrades[item] === false || upgrades[item] === 0) {
+                if (points >= cost) {
+                    points -= cost;
+                    if (item === 'headphones') {
+                        upgrades.headphones = true;
+                        addHeadphones();
+                    } else {
+                        upgrades[item] = 1;
+                        upgradeItem(item);
+                    }
+                    updateUI();
+                    saveProgress();
+                    checkLevelUp();
+                }
+            }
+        }
+
+        function addHeadphones() {
+            let hpLeft = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshStandardMaterial({ color: 0x0000ff }));
+            hpLeft.position.set(-0.15, 1.2, 0);
+            character.add(hpLeft);
+
+            let hpRight = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshStandardMaterial({ color: 0x0000ff }));
+            hpRight.position.set(0.15, 1.2, 0);
+            character.add(hpRight);
+
+            let hpBand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 32), new THREE.MeshStandardMaterial({ color: 0x0000ff }));
+            hpBand.rotation.z = Math.PI / 2;
+            hpBand.position.y = 1.25;
+            character.add(hpBand);
+        }
+
+        function upgradeItem(item) {
+            let mesh = { monitor: monitorMesh, keyboard: keyboardMesh, chair: chairMesh, mouse: mouseMesh }[item];
+            if (mesh) {
+                mesh.scale.multiplyScalar(1.2);
+                mesh.material.color.set(0x00ff00); // green for upgraded
+            }
+        }
+
+        function checkLevelUp() {
+            let totalUpgrades = Object.values(upgrades).reduce((a, b) => a + (b ? 1 : 0), 0);
+            if (totalUpgrades >= level * 1.5 && level < levels.length) {
+                level++;
+                updateUI();
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (mixer) mixer.update(0.01);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function saveProgress() {
+            localStorage.setItem('gethab_points', points);
+            localStorage.setItem('gethab_level', level);
+            localStorage.setItem('gethab_gender', gender);
+            localStorage.setItem('gethab_upgrades', JSON.stringify(upgrades));
+        }
+
+        function loadSaved() {
+            if (localStorage.getItem('gethab_points')) {
+                points = parseInt(localStorage.getItem('gethab_points'));
+                level = parseInt(localStorage.getItem('gethab_level'));
+                gender = localStorage.getItem('gethab_gender');
+                upgrades = JSON.parse(localStorage.getItem('gethab_upgrades'));
+                applyUpgrades();
+                updateUI();
+            }
+        }
+
+        function applyUpgrades() {
+            if (upgrades.headphones) addHeadphones();
+            if (upgrades.monitor > 0) upgradeItem('monitor');
+            if (upgrades.keyboard > 0) upgradeItem('keyboard');
+            if (upgrades.chair > 0) upgradeItem('chair');
+            if (upgrades.mouse > 0) upgradeItem('mouse');
+        }
+
+        window.startGame = startGame;
+        window.chooseGender = chooseGender;
+        window.buy = buy;
+    </script>
 </body>
 </html>
