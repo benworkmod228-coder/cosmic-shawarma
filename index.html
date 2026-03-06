@@ -1,81 +1,60 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Ben's Setup Tycoon ULTRA</title>
+<title>Ben's Setup Tycoon</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
 <style>
 
 body{
 margin:0;
+overflow:hidden;
 font-family:Arial;
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+background:black;
 color:white;
-text-align:center;
 }
 
-.container{
-padding:20px;
+#ui{
+position:fixed;
+top:10px;
+left:10px;
+z-index:10;
 }
 
-.tabs button{
-background:#111;
-margin:5px;
-}
-
-button{
-padding:10px 18px;
-border:none;
-border-radius:10px;
-background:#00c3ff;
-color:white;
-font-size:15px;
-cursor:pointer;
-transition:0.2s;
-}
-
-button:hover{
-transform:scale(1.05);
-}
-
-.character{
-font-size:90px;
-animation:idle 2s infinite;
-}
-
-@keyframes idle{
-0%{transform:translateY(0px)}
-50%{transform:translateY(-5px)}
-100%{transform:translateY(0px)}
-}
-
-.room{
-background:rgba(0,0,0,0.3);
-border-radius:15px;
-padding:20px;
-margin:15px auto;
-max-width:500px;
-}
-
-.panel{
-display:none;
-}
-
-.active{
-display:block;
+#shop{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:rgba(0,0,0,0.8);
+padding:10px;
+display:flex;
+overflow-x:auto;
 }
 
 .item{
-background:rgba(255,255,255,0.1);
-padding:10px;
-margin:10px;
+background:#222;
 border-radius:10px;
+padding:10px;
+margin:5px;
+min-width:120px;
+text-align:center;
+}
+
+button{
+padding:5px;
+border:none;
+background:#00c3ff;
+border-radius:5px;
+color:white;
+cursor:pointer;
 }
 
 </style>
@@ -84,125 +63,39 @@ border-radius:10px;
 
 <body>
 
-<div class="container" id="startScreen">
+<div id="ui">
 
-<h1>🎮 Ben's Setup Tycoon</h1>
-
-<p>
-
-Ты начинаешь с холодной комнаты  
-старого компьютера  
-и обычной табуретки.
-
-Но со временем ты создашь  
-лучший игровой сетап  
-и станешь стримером.
-
-Создатель игры — <b>Ben</b>
-
-</p>
-
-<h2>Выбери персонажа</h2>
-
-<button onclick="selectCharacter('boy')">👦 Мальчик</button>
-<button onclick="selectCharacter('girl')">👧 Девочка</button>
+<div>⚡ Очки: <span id="points">0</span></div>
+<div>⭐ XP: <span id="xp">0</span></div>
 
 </div>
 
 
-<div class="container" id="game" style="display:none">
-
-<div class="character" id="character"></div>
-
-<h3 id="level">Уровень: Холодник</h3>
-
-<h2>⚡ Очки: <span id="points">0</span></h2>
-
-<h3>⭐ XP: <span id="xp">0</span></h3>
-
-<h3>👥 Подписчики: <span id="fans">0</span></h3>
-
-<button onclick="clickGame()">💻 Работать</button>
-<button onclick="stream()">📡 Стримить</button>
-
-<div class="tabs">
-
-<button onclick="openTab('roomTab')">🏠 Комната</button>
-<button onclick="openTab('shopTab')">🛒 Магазин</button>
-<button onclick="openTab('clothesTab')">👕 Гардероб</button>
-<button onclick="openTab('achTab')">🏆 Достижения</button>
-
-</div>
-
-
-<div id="roomTab" class="panel active">
-
-<div class="room">
-
-<div id="chair">🪑 Табуретка</div>
-<div id="pc">💻 Старый ПК</div>
-<div id="gpu"></div>
-<div id="monitor"></div>
-<div id="decor"></div>
-
-</div>
-
-</div>
-
-
-<div id="shopTab" class="panel">
+<div id="shop">
 
 <div class="item">
-🎧 Наушники (+1)<br>
-<button onclick="buy('headphones',50)">50</button>
+🎧 Наушники<br>
+<button onclick="buy('headphones',100)">100</button>
 </div>
 
 <div class="item">
-🖥 Монитор (+3)<br>
+🖥 Монитор<br>
 <button onclick="buy('monitor',200)">200</button>
 </div>
 
 <div class="item">
-⌨ Клавиатура (+4)<br>
-<button onclick="buy('keyboard',400)">400</button>
+⌨ Клавиатура<br>
+<button onclick="buy('keyboard',300)">300</button>
 </div>
 
 <div class="item">
-🪑 Кресло (+6)<br>
-<button onclick="buy('chair',800)">800</button>
+🪑 Кресло<br>
+<button onclick="buy('chair',400)">400</button>
 </div>
 
 <div class="item">
-🎮 GPU (+10)<br>
-<button onclick="buy('gpu',1500)">1500</button>
-</div>
-
-<div class="item">
-🧸 Декор (+15)<br>
-<button onclick="buy('decor',2000)">2000</button>
-</div>
-
-</div>
-
-
-<div id="clothesTab" class="panel">
-
-<button onclick="wear('cap')">🧢 Кепка</button>
-<button onclick="wear('glasses')">🕶 Очки</button>
-<button onclick="wear('hoodie')">👕 Худи</button>
-
-<div id="outfit"></div>
-
-</div>
-
-
-<div id="achTab" class="panel">
-
-<div id="a1">❌ Первый апгрейд</div>
-<div id="a2">❌ 1000 очков</div>
-<div id="a3">❌ 5000 очков</div>
-<div id="a4">❌ 100 подписчиков</div>
-
+🧸 Декор<br>
+<button onclick="buy('decor',600)">600</button>
 </div>
 
 </div>
@@ -210,123 +103,128 @@ border-radius:10px;
 
 <script>
 
+let scene = new THREE.Scene()
+let camera = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000)
+let renderer = new THREE.WebGLRenderer()
+
+renderer.setSize(window.innerWidth,window.innerHeight)
+
+document.body.appendChild(renderer.domElement)
+
+camera.position.z = 5
+
+let light = new THREE.PointLight(0xffffff,1)
+light.position.set(10,10,10)
+scene.add(light)
+
 let points=0
 let xp=0
-let fans=0
 let clickPower=1
-let level="Холодник"
 
-let upgrades={}
+let player
+let headphones
 
-function selectCharacter(type){
+function createPlayer(){
 
-document.getElementById("startScreen").style.display="none"
-document.getElementById("game").style.display="block"
+let geo = new THREE.BoxGeometry(1,2,1)
+let mat = new THREE.MeshStandardMaterial({color:0x00ffcc})
 
-document.getElementById("character").innerHTML = type=="boy" ? "👦" : "👧"
+player = new THREE.Mesh(geo,mat)
 
-load()
+scene.add(player)
+
+}
+
+function createChair(){
+
+let geo = new THREE.BoxGeometry(1.5,0.5,1.5)
+let mat = new THREE.MeshStandardMaterial({color:0x555555})
+
+let chair = new THREE.Mesh(geo,mat)
+
+chair.position.y = -1.5
+
+scene.add(chair)
+
+}
+
+function createDesk(){
+
+let geo = new THREE.BoxGeometry(3,0.3,1.5)
+let mat = new THREE.MeshStandardMaterial({color:0x222222})
+
+let desk = new THREE.Mesh(geo,mat)
+
+desk.position.y = -0.5
+desk.position.z = -1
+
+scene.add(desk)
+
+}
+
+function createPC(){
+
+let geo = new THREE.BoxGeometry(0.7,1,0.7)
+let mat = new THREE.MeshStandardMaterial({color:0x111111})
+
+let pc = new THREE.Mesh(geo,mat)
+
+pc.position.z = -1
+pc.position.x = 1
+
+scene.add(pc)
+
+}
+
+function buy(item,cost){
+
+if(points<cost) return
+
+points-=cost
+
+if(item==="headphones"){
+
+let geo = new THREE.TorusGeometry(0.6,0.1,16,100)
+let mat = new THREE.MeshStandardMaterial({color:0xff0000})
+
+headphones = new THREE.Mesh(geo,mat)
+
+headphones.position.y=1
+
+player.add(headphones)
+
+}
+
+if(item==="monitor"){
+
+let geo = new THREE.BoxGeometry(1.2,0.8,0.1)
+let mat = new THREE.MeshStandardMaterial({color:0x0000ff})
+
+let monitor = new THREE.Mesh(geo,mat)
+
+monitor.position.z=-1
+monitor.position.y=0.3
+
+scene.add(monitor)
+
+}
+
+if(item==="chair"){
+
+createChair()
+
+}
+
+update()
 
 }
 
 function clickGame(){
 
 points+=clickPower
-xp+=2
-
-checkLevel()
-update()
-save()
-
-}
-
-function stream(){
-
-fans+=Math.floor(clickPower*2)
-xp+=5
+xp+=1
 
 update()
-save()
-
-}
-
-function buy(item,cost){
-
-if(points<cost){
-alert("Недостаточно очков")
-return
-}
-
-points-=cost
-
-if(item=="headphones"){
-clickPower+=1
-}
-
-if(item=="monitor"){
-clickPower+=3
-document.getElementById("monitor").innerHTML="🖥 Монитор"
-}
-
-if(item=="keyboard"){
-clickPower+=4
-}
-
-if(item=="chair"){
-clickPower+=6
-document.getElementById("chair").innerHTML="🪑 Геймерское кресло"
-}
-
-if(item=="gpu"){
-clickPower+=10
-document.getElementById("gpu").innerHTML="🎮 RTX GPU"
-}
-
-if(item=="decor"){
-clickPower+=15
-document.getElementById("decor").innerHTML="🧸 Декор"
-}
-
-upgrades[item]=true
-
-update()
-save()
-
-}
-
-function wear(item){
-
-let outfit=document.getElementById("outfit")
-
-if(item=="cap") outfit.innerHTML+=" 🧢"
-if(item=="glasses") outfit.innerHTML+=" 🕶"
-if(item=="hoodie") outfit.innerHTML+=" 👕"
-
-}
-
-function checkLevel(){
-
-if(xp>200){
-level="Клоузер"
-}
-
-if(xp>800){
-level="Pro Gamer"
-}
-
-if(xp>2000){
-level="Top Streamer"
-}
-
-document.getElementById("level").innerText="Уровень: "+level
-
-}
-
-function openTab(tab){
-
-document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"))
-
-document.getElementById(tab).classList.add("active")
 
 }
 
@@ -334,41 +232,28 @@ function update(){
 
 document.getElementById("points").innerText=Math.floor(points)
 document.getElementById("xp").innerText=xp
-document.getElementById("fans").innerText=fans
 
 }
 
-function save(){
+window.addEventListener("click",clickGame)
 
-localStorage.setItem("points",points)
-localStorage.setItem("xp",xp)
-localStorage.setItem("fans",fans)
-localStorage.setItem("clickPower",clickPower)
+function animate(){
 
-}
+requestAnimationFrame(animate)
 
-function load(){
+player.rotation.y +=0.01
 
-points=parseFloat(localStorage.getItem("points"))||0
-xp=parseFloat(localStorage.getItem("xp"))||0
-fans=parseFloat(localStorage.getItem("fans"))||0
-clickPower=parseFloat(localStorage.getItem("clickPower"))||1
-
-update()
+renderer.render(scene,camera)
 
 }
 
-setInterval(()=>{
+createPlayer()
+createDesk()
+createPC()
 
-points+=clickPower*0.5
-fans+=1
-
-update()
-
-},2000)
+animate()
 
 </script>
 
 </body>
-
 </html>
