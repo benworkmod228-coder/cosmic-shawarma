@@ -1,30 +1,374 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
+
 <head>
+
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Ben's Setup Tycoon ULTRA</title>
+
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
+}
+
+.container{
+padding:20px;
+}
+
+.tabs button{
+background:#111;
+margin:5px;
+}
+
+button{
+padding:10px 18px;
+border:none;
+border-radius:10px;
+background:#00c3ff;
+color:white;
+font-size:15px;
+cursor:pointer;
+transition:0.2s;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+.character{
+font-size:90px;
+animation:idle 2s infinite;
+}
+
+@keyframes idle{
+0%{transform:translateY(0px)}
+50%{transform:translateY(-5px)}
+100%{transform:translateY(0px)}
+}
+
+.room{
+background:rgba(0,0,0,0.3);
+border-radius:15px;
+padding:20px;
+margin:15px auto;
+max-width:500px;
+}
+
+.panel{
+display:none;
+}
+
+.active{
+display:block;
+}
+
+.item{
+background:rgba(255,255,255,0.1);
+padding:10px;
+margin:10px;
+border-radius:10px;
+}
+
+</style>
+
 </head>
-<body style="background:black;color:white;text-align:center;padding-top:50px;">
 
-<h2>Тест WebApp</h2>
+<body>
 
-<button onclick="sendTest()" style="padding:15px;font-size:18px;">
-Отправить тест
-</button>
+<div class="container" id="startScreen">
+
+<h1>🎮 Ben's Setup Tycoon</h1>
+
+<p>
+
+Ты начинаешь с холодной комнаты  
+старого компьютера  
+и обычной табуретки.
+
+Но со временем ты создашь  
+лучший игровой сетап  
+и станешь стримером.
+
+Создатель игры — <b>Ben</b>
+
+</p>
+
+<h2>Выбери персонажа</h2>
+
+<button onclick="selectCharacter('boy')">👦 Мальчик</button>
+<button onclick="selectCharacter('girl')">👧 Девочка</button>
+
+</div>
+
+
+<div class="container" id="game" style="display:none">
+
+<div class="character" id="character"></div>
+
+<h3 id="level">Уровень: Холодник</h3>
+
+<h2>⚡ Очки: <span id="points">0</span></h2>
+
+<h3>⭐ XP: <span id="xp">0</span></h3>
+
+<h3>👥 Подписчики: <span id="fans">0</span></h3>
+
+<button onclick="clickGame()">💻 Работать</button>
+<button onclick="stream()">📡 Стримить</button>
+
+<div class="tabs">
+
+<button onclick="openTab('roomTab')">🏠 Комната</button>
+<button onclick="openTab('shopTab')">🛒 Магазин</button>
+<button onclick="openTab('clothesTab')">👕 Гардероб</button>
+<button onclick="openTab('achTab')">🏆 Достижения</button>
+
+</div>
+
+
+<div id="roomTab" class="panel active">
+
+<div class="room">
+
+<div id="chair">🪑 Табуретка</div>
+<div id="pc">💻 Старый ПК</div>
+<div id="gpu"></div>
+<div id="monitor"></div>
+<div id="decor"></div>
+
+</div>
+
+</div>
+
+
+<div id="shopTab" class="panel">
+
+<div class="item">
+🎧 Наушники (+1)<br>
+<button onclick="buy('headphones',50)">50</button>
+</div>
+
+<div class="item">
+🖥 Монитор (+3)<br>
+<button onclick="buy('monitor',200)">200</button>
+</div>
+
+<div class="item">
+⌨ Клавиатура (+4)<br>
+<button onclick="buy('keyboard',400)">400</button>
+</div>
+
+<div class="item">
+🪑 Кресло (+6)<br>
+<button onclick="buy('chair',800)">800</button>
+</div>
+
+<div class="item">
+🎮 GPU (+10)<br>
+<button onclick="buy('gpu',1500)">1500</button>
+</div>
+
+<div class="item">
+🧸 Декор (+15)<br>
+<button onclick="buy('decor',2000)">2000</button>
+</div>
+
+</div>
+
+
+<div id="clothesTab" class="panel">
+
+<button onclick="wear('cap')">🧢 Кепка</button>
+<button onclick="wear('glasses')">🕶 Очки</button>
+<button onclick="wear('hoodie')">👕 Худи</button>
+
+<div id="outfit"></div>
+
+</div>
+
+
+<div id="achTab" class="panel">
+
+<div id="a1">❌ Первый апгрейд</div>
+<div id="a2">❌ 1000 очков</div>
+<div id="a3">❌ 5000 очков</div>
+<div id="a4">❌ 100 подписчиков</div>
+
+</div>
+
+</div>
+
 
 <script>
-const tg = window.Telegram.WebApp;
-tg.expand();
 
-function sendTest(){
-    if (!tg.initDataUnsafe || !tg.initDataUnsafe.user){
-        alert("WebApp не запущен из Telegram!");
-        return;
-    }
+let points=0
+let xp=0
+let fans=0
+let clickPower=1
+let level="Холодник"
 
-    tg.sendData("TEST_MESSAGE");
+let upgrades={}
+
+function selectCharacter(type){
+
+document.getElementById("startScreen").style.display="none"
+document.getElementById("game").style.display="block"
+
+document.getElementById("character").innerHTML = type=="boy" ? "👦" : "👧"
+
+load()
+
 }
+
+function clickGame(){
+
+points+=clickPower
+xp+=2
+
+checkLevel()
+update()
+save()
+
+}
+
+function stream(){
+
+fans+=Math.floor(clickPower*2)
+xp+=5
+
+update()
+save()
+
+}
+
+function buy(item,cost){
+
+if(points<cost){
+alert("Недостаточно очков")
+return
+}
+
+points-=cost
+
+if(item=="headphones"){
+clickPower+=1
+}
+
+if(item=="monitor"){
+clickPower+=3
+document.getElementById("monitor").innerHTML="🖥 Монитор"
+}
+
+if(item=="keyboard"){
+clickPower+=4
+}
+
+if(item=="chair"){
+clickPower+=6
+document.getElementById("chair").innerHTML="🪑 Геймерское кресло"
+}
+
+if(item=="gpu"){
+clickPower+=10
+document.getElementById("gpu").innerHTML="🎮 RTX GPU"
+}
+
+if(item=="decor"){
+clickPower+=15
+document.getElementById("decor").innerHTML="🧸 Декор"
+}
+
+upgrades[item]=true
+
+update()
+save()
+
+}
+
+function wear(item){
+
+let outfit=document.getElementById("outfit")
+
+if(item=="cap") outfit.innerHTML+=" 🧢"
+if(item=="glasses") outfit.innerHTML+=" 🕶"
+if(item=="hoodie") outfit.innerHTML+=" 👕"
+
+}
+
+function checkLevel(){
+
+if(xp>200){
+level="Клоузер"
+}
+
+if(xp>800){
+level="Pro Gamer"
+}
+
+if(xp>2000){
+level="Top Streamer"
+}
+
+document.getElementById("level").innerText="Уровень: "+level
+
+}
+
+function openTab(tab){
+
+document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"))
+
+document.getElementById(tab).classList.add("active")
+
+}
+
+function update(){
+
+document.getElementById("points").innerText=Math.floor(points)
+document.getElementById("xp").innerText=xp
+document.getElementById("fans").innerText=fans
+
+}
+
+function save(){
+
+localStorage.setItem("points",points)
+localStorage.setItem("xp",xp)
+localStorage.setItem("fans",fans)
+localStorage.setItem("clickPower",clickPower)
+
+}
+
+function load(){
+
+points=parseFloat(localStorage.getItem("points"))||0
+xp=parseFloat(localStorage.getItem("xp"))||0
+fans=parseFloat(localStorage.getItem("fans"))||0
+clickPower=parseFloat(localStorage.getItem("clickPower"))||1
+
+update()
+
+}
+
+setInterval(()=>{
+
+points+=clickPower*0.5
+fans+=1
+
+update()
+
+},2000)
+
 </script>
 
 </body>
+
 </html>
